@@ -1,0 +1,199 @@
+---
+title: "Income Prediction"
+author: "Anupama Radhakrishnan"
+date: "29/01/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Load Libraries
+```{r message=FALSE}
+library(tidyr)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+```
+## Load Data
+```{r}
+income_temp<-read.csv("census.csv",header=TRUE,stringsAsFactors = FALSE)
+```
+```{r}
+
+
+str(income_temp)
+dim(income_temp)
+table(is.na(income_temp))
+sapply(income_temp, function(x) sum(is.na(x)))
+income_temp[!complete.cases(income_temp),] 
+
+
+```
+```{r include=FALSE}
+summary(income_temp)
+```
+```{r}
+census_data<-income_temp
+names(census_data)<-c("age","workclass","fnl_wgt","education","education_num","status","occupation","relationship","race","sex","cap_gain","cap_loss","hours_week","country","income")
+
+head(census_data)
+```
+
+## Continous Variables summary
+
+```{r}
+census_data %>% 
+    select_if(is.numeric)%>% 
+    summary()
+  
+```
+## variance 
+```{r}
+ggplot(data=census_data)+
+  geom_histogram(mapping=aes(x=age),binwidth = 0.5)
+
+
+```
+```{r}
+ggplot(data=census_data)+
+  geom_histogram(mapping=aes(x=education_num),binwidth = 0.5)
+```
+
+```{r}
+
+ggplot(data=census_data)+
+  geom_histogram(mapping=aes(x=hours_week),binwidth = 2)+
+  coord_cartesian(ylim = c(0, 2000))
+```
+
+## Categorical Variables
+
+```{r}
+census_data %>% 
+    select_if(is.character) %>% 
+  summarise_all(n_distinct)
+
+```
+
+
+
+```{r}
+unique( census_data$workclass )
+census_data %>% count(workclass)
+
+```
+```{r}
+
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=workclass),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$education )
+census_data %>% count(education)
+
+```
+```{r}
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=education),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$status )
+census_data %>% count(status)
+
+```
+```{r}
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=status),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$occupation )
+census_data %>% count(occupation)
+```
+```{r}
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=occupation),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$relationship )
+census_data %>% count(relationship)
+```
+```{r}
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=relationship),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$race )
+census_data %>% count(race)
+
+```
+```{r}
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=race),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$country )
+
+top_country<-census_data %>% 
+  count(country) %>% 
+  filter(n<1000) %>% 
+  arrange(n) %>% 
+  top_n(10)
+
+
+
+top_country
+```
+```{r}
+
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=country))
+
+```
+
+
+```{r}
+census_data %>% count(income)
+```
+
+## Covariance
+```{r}
+ggplot(data=census_data,mapping=aes(x=age,y=..density..))+
+  geom_freqpoly(mapping=aes(color=income),binwidth=20)
+```
+```{r}
+ggplot(data = census_data, mapping = aes(x = income, y = age)) +
+  geom_boxplot()
+```
+```{r}
+
+ggplot(data = census_data) +
+  geom_count(mapping = aes(x = income, y = education))
+
+```
+```{r}
+ggplot(data = census_data) +
+  geom_count(mapping = aes(x = income, y = race))
+```
+
+```{r}
+ggplot(data = census_data) +
+  geom_count(mapping = aes(x = income, y = sex))
+```
+
+
+```{r}
+ggplot(data = census_data, mapping = aes(x = income, y = hours_week)) +
+  geom_boxplot()
+```
+
+
