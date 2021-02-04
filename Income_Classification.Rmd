@@ -1,0 +1,433 @@
+---
+title: "Income Prediction"
+author: "Anupama Radhakrishnan"
+date: "29/01/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Load Libraries
+```{r message=FALSE}
+library(tidyr)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(purrr)
+library(kableExtra)
+```
+## Load Data
+```{r}
+income_temp<-read.csv("census.csv",header=TRUE,stringsAsFactors = FALSE)
+```
+```{r}
+
+
+str(income_temp)
+dim(income_temp)
+table(is.na(income_temp))
+sapply(income_temp, function(x) sum(is.na(x)))
+income_temp[!complete.cases(income_temp),] 
+
+
+```
+```{r include=FALSE}
+summary(income_temp)
+```
+```{r}
+census_data<-income_temp
+names(census_data)<-c("age","workclass","fnl_wgt","education","education_num","status","occupation","relationship","race","sex","cap_gain","cap_loss","hours_week","country","income")
+
+head(census_data)
+```
+
+## Continous Variables summary
+
+```{r}
+census_data %>% 
+    select_if(is.numeric)%>% 
+    summary()
+  
+```
+## variance 
+```{r}
+ggplot(data=census_data)+
+  geom_histogram(mapping=aes(x=age),binwidth = 0.5)
+
+
+```
+```{r}
+ggplot(data=census_data)+
+  geom_histogram(mapping=aes(x=education_num),binwidth = 0.5)
+```
+
+```{r}
+
+ggplot(data=census_data)+
+  geom_histogram(mapping=aes(x=hours_week),binwidth = 2)+
+  coord_cartesian(ylim = c(0, 2000))
+
+
+```
+
+## Categorical Variables
+
+```{r}
+census_data %>% 
+    select_if(is.character) %>% 
+  summarise_all(n_distinct)
+
+```
+
+
+
+```{r}
+unique( census_data$workclass )
+census_data %>% count(workclass)
+
+```
+```{r}
+
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=workclass),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$education )
+census_data %>% count(education)
+
+```
+```{r}
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=education),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$status )
+census_data %>% count(status)
+
+```
+```{r}
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=status),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$occupation )
+census_data %>% count(occupation)
+```
+```{r}
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=occupation),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$relationship )
+census_data %>% count(relationship)
+```
+```{r}
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=relationship),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$race )
+census_data %>% count(race)
+
+```
+```{r}
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=race),binwidth = 0.5)
+```
+
+```{r}
+unique( census_data$country )
+
+top_country<-census_data %>% 
+  count(country) %>% 
+  arrange(n) %>% 
+  top_n(10)
+
+
+
+census_data %>% 
+  count(country) 
+  
+
+
+```
+```{r}
+
+ggplot(data=census_data)+
+  geom_bar(mapping=aes(y=country))
+
+```
+
+
+```{r}
+census_data %>% count(income)
+```
+
+## Covariance
+```{r}
+ggplot(data=census_data,mapping=aes(x=age,y=..density..))+
+  geom_freqpoly(mapping=aes(color=income),binwidth=20)
+```
+```{r}
+ggplot(data = census_data, mapping = aes(x = income, y = age)) +
+  geom_boxplot()
+```
+```{r}
+
+ggplot(data = census_data) +
+  geom_count(mapping = aes(x = income, y = education))
+
+```
+```{r}
+ggplot(data = census_data) +
+  geom_count(mapping = aes(x = income, y = race))
+```
+
+```{r}
+ggplot(data = census_data) +
+  geom_count(mapping = aes(x = income, y = sex))
+```
+
+
+```{r}
+ggplot(data = census_data, mapping = aes(x = income, y = hours_week)) +
+  geom_boxplot()
+```
+```{r}
+ggplot(data=census_data,mapping=aes(fill=sex,x=income ))+
+  geom_bar(binwidth=20 ,position = "dodge")
+```
+```{r}
+ggplot(data=census_data,mapping=aes(fill=race,x=income ))+
+  geom_bar(binwidth=20 ,position = "dodge")
+```
+
+```{r}
+ggplot(data=census_data,mapping=aes(fill=relationship,x=fct_infreq(income )))+
+  geom_bar(binwidth=20 ,position = "dodge")
+```
+```{r}
+
+census_data %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_histogram()
+```
+```{r}
+census_data %>%
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+    facet_wrap(~ key, scales = "free") +
+    geom_boxplot()
+
+```
+
+
+
+## Replace "?" with Mode
+
+```{r}
+census_data$workclass[census_data$workclass=="?"]<-"Private"
+
+census_data$occupation[census_data$occupation=="?"]<-"Prof-specialty"
+
+census_data$country[census_data$country=="?"]<-"United-States"
+
+```
+## Remove duplicates
+
+```{r}
+
+
+census_data<-distinct(census_data)
+dim(census_data)
+```
+
+
+
+## Feature Engineer education
+
+```{r}
+census_data$education[census_data$education %in% c("10th","11th","12th","1st-4th","5th-6th","7th-8th","9th","Preschool")]<-"School"
+census_data$education[census_data$education=="HS-grad"]<-"High School"
+census_data$education[census_data$education %in% c("Assoc-acdm","Assoc-voc","Some-college","Prof-school")]<-"Higher Education"
+census_data$education[census_data$education=="Bachelors"]<-"Undergraduate"
+census_data$education[census_data$education=="Masters"]<-"Graduate"
+
+
+
+
+```
+
+## Feature Engineer marital status
+
+
+```{r}
+census_data %>% 
+  count(status)
+
+
+census_data$status[census_data$status %in% c("Married-AF-spouse","Married-civ-spouse","Married-spouse-absent")]<-"Married"
+
+
+```
+
+## Feature Engineer income
+
+```{r}
+
+census_data$income[census_data$income=="<=50K"]<-0
+census_data$income[census_data$income==">50K"]<-1
+```
+## Feature Engineer Hours per week
+
+
+```{r}
+census_data$weekly_hours[census_data$hours_week <40]<-"less than 40 hrs"
+census_data$weekly_hours[census_data$hours_week >=40 & census_data$hours_week<50]<-"40-50 hrs"
+census_data$weekly_hours[census_data$hours_week >=50 & census_data$hours_week<60]<-"50-60 hrs"
+census_data$weekly_hours[census_data$hours_week >=60 & census_data$hours_week<70]<-"60-70 hrs"
+census_data$weekly_hours[census_data$hours_week >=70 & census_data$hours_week<=80]<-"70-80 hrs"
+census_data$weekly_hours[census_data$hours_week >80]<-"greater than 80 hrs"
+
+
+
+head(census_data)
+
+```
+
+
+## Feature Engineer country
+```{r}
+
+#South to United States
+census_data$country[census_data$country=="South"]<-"United-States"
+
+
+distinct(census_data[c("country")])
+
+
+
+Asia_East <- c("Cambodia", "China", "Hong", "Laos", "Thailand",
+               "Japan", "Taiwan", "Vietnam","Philippines")
+
+Asia_Central <- c("India", "Iran")
+
+Central_America <- c("Cuba", "Guatemala", "Jamaica", "Nicaragua", 
+                     "Puerto-Rico",  "Dominican-Republic", "El-Salvador", 
+                     "Haiti", "Honduras", "Mexico", "Trinadad&Tobago")
+
+South_America <- c("Ecuador", "Peru", "Columbia")
+
+
+Europe_West <- c("England", "Germany", "Holand-Netherlands", "Ireland", 
+                 "France", "Greece", "Italy", "Portugal", "Scotland")
+
+Europe_East <- c("Poland", "Yugoslavia", "Hungary")
+
+North_America<-c("United-States","Canada","Outlying-US(Guam-USVI-etc)")
+
+
+
+
+
+
+
+
+census_data <- census_data %>%  
+      mutate( region = ifelse(country %in% Asia_East, "East-Asia",
+                ifelse(country %in% Asia_Central, "Central-Asia",
+                ifelse(country %in% Central_America, "Central-America",
+                ifelse(country %in% South_America, "South-America",
+                ifelse(country %in% Europe_West, "Europe-West",
+                ifelse(country %in% Europe_East, "Europe-East",
+                ifelse(country %in% North_America, "North-America","North-America"
+                       ))))))))
+
+
+
+
+#head(census_data,100)
+
+
+```
+## Feature Engineer Capital Gain and Capital LOss
+```{r}
+withzero_capgain<-mean(census_data$cap_gain)
+nonzero_capgain<-mean(subset(census_data$cap_gain,census_data$cap_gain>0))
+
+
+
+withzero_caploss<-mean(census_data$cap_loss)
+nonzero_caploss<-mean(subset(census_data$cap_loss,census_data$cap_loss>0))
+
+
+print(paste("With zero capital gain:",round(withzero_capgain)))
+print(paste("Non zero capital gain:",round(nonzero_capgain)))
+
+print(paste("With zero capital loss:",round(withzero_caploss)))
+print(paste("Non zero capital loss:",round(nonzero_caploss)))
+
+
+
+
+quantile_nonzero_capgain<-quantile(x = subset(census_data$cap_gain, census_data$cap_gain > 0), 
+                   probs = seq(0, 1, 0.25))
+
+
+
+quantile_nonzero_caploss<-quantile(x = subset(census_data$cap_gain, census_data$cap_gain > 0), 
+                   probs = seq(0, 1, 0.25))
+
+
+
+kable(x = data.frame(CapitalGain = quantile_nonzero_capgain, CapitalLoss = quantile_nonzero_caploss),
+      caption = "Quantiles of the Nonzero Capital")
+
+
+
+```
+
+```{r}
+
+#Capital Gain
+
+census_data<- mutate(census_data, 
+            gain = ifelse(census_data$cap_gain < 3411, "Low",
+                       ifelse(census_data$cap_gain >= 3411 & 
+                              census_data$cap_gain <= 14084, "Medium", "High")))
+
+
+
+#Capital LOss
+
+
+
+census_data<- mutate(census_data, 
+            loss = ifelse(census_data$cap_gain < 3411, "Low",
+                       ifelse(census_data$cap_gain >= 3411 & 
+                              census_data$cap_gain <= 14084, "Medium", "High")))
+
+
+
+
+```
+
+
+
+
+
+
+
