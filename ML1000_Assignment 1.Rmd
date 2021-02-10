@@ -1,0 +1,642 @@
+---
+title: "ML1000-Assignment-1"
+author: "Crystal Zhu"
+date: "09/02/2021"
+output: html_document
+---
+  ## Data Exploration
+  
+  ### Check the structure of the dataset
+  
+```{r, echo=FALSE}
+#library(openxlsx)
+X=read.csv("adultdata.csv", stringsAsFactors = TRUE)
+#summary(X)
+str(X)
+
+cat("The dimension of the dataset is:","\n")
+dim(X)
+freq_table_target=table(X$income)
+cat("The proportion of the classes in target variable are:","\n")
+prop.table(freq_table_target)
+#32561 records in "training data" (2/3 of total 48842 records)
+#16281 records in the "test data", which is saved in another Excel file
+```
+
+There are 76% of people in the first class (income no higher than 50K), thus this is an imbalanced dataset.
+
+### Check duplicates
+
+```{r, echo=FALSE,message=FALSE}
+library(tidyverse)
+#Remove duplicated rows based on all columns
+# - if two rows are exactly the same, keep only one of them
+X_nodup=distinct(X,X[,1:15], keep_all=TRUE)[,-16]
+
+#identify duplicated rows
+X_dup=X[duplicated(X),]
+dim(X_dup)
+#the row_id in X_dup is the row index in the original dataset X
+#There are 24 duplicated rows that have same values for all variables, so remove them from analysis.
+
+#use X_nodup for all later analysis
+X=X_nodup
+```
+
+## Check missing values.
+```{r , echo=FALSE}
+#echo=FALSE only stops the code from printing out, not the results
+
+
+#check missing values of each column
+m=c()
+for (i in 1:ncol(X))  {
+  m[i]=sum(grepl("?",X[,i],fixed = TRUE))
+}
+missval=paste0(colnames(X),rep("-",15),m,rep(" missing values",))
+cat("The number of missing values for each variable are:")
+missval
+
+#Recode missing values to be more standard - replace ? with NA
+#ifelse will coerce the factor values into intergers, thus use as.character to main the original factor values
+X$workclass=ifelse(X$workclass==" ?",NA,as.character(X$workclass))
+X$occupation=ifelse(X$occupation==" ?",NA,as.character(X$occupation))
+X$nativecountry=ifelse(X$nativecountry==" ?",NA,as.character(X$nativecountry))
+
+#then transform the characters back to factors
+X$workclass=as.factor(X$workclass)
+X$occupation=as.factor(X$occupation)
+X$nativecountry=as.factor(X$nativecountry)
+#str(X)
+
+#display the proportion of missing values
+pMiss = function(x){sum(is.na(x))/length(x)*100}
+cat("The percentages of missing values for each variable are:")
+apply(X,2,pMiss)
+
+
+```
+From the above, there are missing values in the data and all the missing values are from categorical variables. Thus decide to remove the records with missings.
+
+### Remove rows with missing values
+
+```{r,echo=FALSE}
+X=X[complete.cases(X),]
+cat("Now the dimension of the dataset becomes:")
+dim(X)
+
+```
+
+
+
+## Recode the values of target variable
+
+```{r,echo=FALSE}
+
+#
+X$income=ifelse(X$income==" <=50K","N","Y")
+X$income=as.factor(X$income)
+cat("Now the levels of the target variable are:")
+summary(X$income)
+
+```
+
+
+## Check data types
+
+```{r, echo=FALSE}
+
+datatype=sapply(X,class)
+datatype
+#6 numeric variables
+#9 categorical variables
+```
+
+We can see there are both numeric and categorical variables in the dataset.
+
+## Check outliers for numeric variables
+```{r, echo=FALSE}
+par(mar = c(2,2,2,2))
+par(mfrow=c(2,3))
+for (i in 1:ncol(X)){
+  
+  if (class(X[,i])=="integer") {
+    boxplot(X[,i], main=colnames(X)[i])
+    cat(colnames(X)[i], " - ","\n")
+    print(summary(X[,i]))
+    cat("\n")
+    
+  }
+}
+
+```
+
+Since there are large number of zeros in capitalgain & capitalloss variables, let's check if there are outliers for non-zero values
+
+```{r}
+par(mar = c(2,2,2,2))
+par(mfrow=c(1,2))
+boxplot(X$capitalgain[which(X$capitalgain!=0)],main="Outliers for non-zero Capitalgain")
+
+boxplot(X$capitalloss[which(X$capitalloss!=0)],main="Outliers for non-zero Capitalloss")
+
+#There are still outliers even excluding zeros for capitalgain and capitalloss variables.
+```
+
+
+There are many outliers for all numeric variables.
+
+## Check validality of column values
+
+```{r, echo=FALSE}
+for (i in 1:ncol(X)) {
+  if (class(X[,i])=="integer") {
+    cat("[",i,"]", colnames(X)[i], "- Numeric","\n","Min 1st Qu. Mean 3rd Qu. Max: ",summary(X[,i])[c(1,2,4,5,6)],"\n")
+  } else {
+    cat("[",i,"]",colnames(X)[i],"- Categorical", "\n", levels(X[,i]),"\n")
+  }
+  
+}
+
+
+```
+
+
+# Exploratory data analysis
+
+## Check redundancy and correlations among variables - how one attribute's values vary from those of another
+
+```{r, echo=FALSE}
+#pairs plot for numeric variables
+numindex=datatype=="integer"
+#pairs(scale(X[,numindex]))
+
+#pairs plot may work better on standardized numeric values?
+#what's with capitalgain & capitalloss?
+```
+
+### correlations
+
+Pearson's correlation for numeric variables
+
+```{r, echo=FALSE, message=FALSE}
+library("Hmisc")
+cormat <- rcorr(as.matrix(X[,numindex]))
+cormat
+
+#Draw a correlogram
+library(corrplot)
+corrplot(cormat$r, type = "upper", 
+         tl.col = "black", tl.srt = 45)
+#for more info http://www.sthda.com/english/wiki/correlation-matrix-a-quick-start-guide-to-analyze-format-and-visualize-a-correlation-matrix-using-r-software 
+
+#Draw a chart of a correlation matrix
+library(PerformanceAnalytics)
+chart.Correlation(scale(X[,numindex]), histogram=TRUE, pch=19)
+
+```
+
+## Chi-square test & Cramer's V to show associations between categorical variables
+
+```{r, echo=FALSE,message=FALSE}
+#If many of the expected counts are very small, the Chi-squared approximation may be poor
+
+X_cat=subset(X,select=c(datatype=="factor"))
+
+#all combinations from 1-9
+#expand.grid will create dups (c(2,1) & c(1,2)), so don't use it
+allcom=combn(ncol(X_cat),2)
+#allcom is 2*36, each column is a combination of 1-9
+#the first row is the index for var1, the second row is the index for var2
+teststat=c()
+pvalue=c()
+ind1=c()
+ind2=c()
+cramv=c()
+chisqmat=matrix(,9,9)
+pmat=matrix(,9,9)
+crammat=matrix(,9,9)
+
+library(DescTools)
+
+#use suppressWarnings() to suppress showing the warning msgs from chisq.test
+
+suppressWarnings (
+  for (i in 1:ncol(allcom)) {
+    
+    teststat[i]=chisq.test(X[,allcom[,i][1]],X[,allcom[,i][2]])$statistic
+    pvalue[i]=chisq.test(X[,allcom[,i][1]],X[,allcom[,i][2]])$p.value
+    ind1[i]=allcom[,i][1]
+    ind2[i]=allcom[,i][2]
+    cramv[i]=CramerV(X[,allcom[,i][1]],X[,allcom[,i][2]])
+    chisqmat[allcom[,i][1],allcom[,i][2]]=teststat[i]
+    pmat[allcom[,i][1],allcom[,i][2]]=pvalue[i]
+    crammat[allcom[,i][1],allcom[,i][2]]=cramv[i]
+    
+  })
+
+#sum(pvalue<0.05)
+#all pvalues are less than 0.05 - all categorical variables are significantly associated with each other
+colnames(chisqmat)=colnames(X_cat)
+rownames(chisqmat)=colnames(X_cat)
+colnames(pmat)=colnames(X_cat)
+rownames(pmat)=colnames(X_cat)
+colnames(crammat)=colnames(X_cat)
+rownames(crammat)=colnames(X_cat)
+cat("The chi-square test statistics for all combinations of categorical variables:")
+chisqmat
+cat("The p-values of chi-square tests for all combinations of categorical variables:")
+pmat
+cat("The associations (Cramer's V) for all combinations of categorical variables:")
+crammat
+
+```
+
+
+## Barcharts for categorical variables
+
+```{r, echo=FALSE, mess=FALSE}
+library(ggplot2)
+library(ggpubr)
+library(grid)
+library(gridExtra)
+library(ggplotify)
+#par(mar = c(2,2,2,2))
+#par(mfrow=c(3,3))
+#g=as.grob()
+#for (i in 1:ncol(X)) {
+  
+#  if (class(X[,i])=="factor") {
+    
+#    m[i]=ggplot(data=X, aes(x=X[,i])) + facet_grid(.~X[,15]) + geom_bar(fill="red") + xlab(colnames(X)[i])       
+    
+#  }
+  
+#}
+#grid.arrange(m[1],m[2],ncol=2)
+
+```
+
+## barplots for categorical variables by target variable
+
+```{r, echo=FALSE, message=FALSE}
+par(mar=c(1,1,1,1))
+
+p1 = ggplot(X, aes(workclass, fill = income)) + geom_bar()
+p2 = ggplot(X, aes(education, fill = income)) + geom_bar()
+p3 = ggplot(X, aes(maritalstatus, fill = income)) + geom_bar()
+p4 = ggplot(X, aes(relationship, fill = income)) + geom_bar()
+p5 = ggplot(X, aes(occupation, fill = income)) + geom_bar()
+p6 = ggplot(X, aes(nativecountry, fill = income)) + geom_bar()
+p7 = ggplot(X, aes(race, fill = income)) + geom_bar()
+p8 = ggplot(X, aes(sex, fill = income)) + geom_bar()
+
+library(gridExtra)
+grid.arrange(p1,p2,nrow=1,ncol=2)
+grid.arrange(p3,p4,nrow=1,ncol=2)
+grid.arrange(p5,p6,nrow=1,ncol=2)
+grid.arrange(p7,p8,nrow=1,ncol=2)
+
+
+```
+
+
+## Feature Engineering
+
+### 1.Education and educationnum are redundant
+
+```{r, echo=FALSE}
+table(X$education,X$educationnum)
+
+```
+
+From the above perfectly 1-1 relationship, we can see these two variabls are essentially exact the same. So we decide to remove the educationnum variable.
+
+```{r, echo=FALSE}
+
+#drop educationnum variable
+X=subset(X,select = -educationnum)
+
+```
+
+
+### 2. Nativecountry
+
+There are 41 levels, namely 41 different countries, in the dataset. Since too many levels for a categorical variable could lead to overfitting, we decide to regroup the native countries into regions.
+
+```{r, echo=FALSE}
+
+table(subset(X,nativecountry==" South")$race)
+```
+
+Since the race of almost all records with Native country "South" is "Asian-Pac-Islander", we think the country "South" is very likely to be South Korea. So we decided to group the country "South" into Asia_East
+
+
+```{r, echo=FALSE}
+Asia_East <- c(" Cambodia", " China", " Hong", " Laos", " Thailand",
+               " Japan", " Taiwan", " Vietnam", " South", " Philippines")
+
+Asia_Central <- c(" India", " Iran")
+
+Central_America <- c(" Cuba", " Guatemala", " Jamaica", " Nicaragua", 
+                     " Puerto-Rico",  " Dominican-Republic", " El-Salvador", 
+                     " Haiti", " Honduras", " Mexico", " Trinadad&Tobago")
+
+South_America <- c(" Ecuador", " Peru", " Columbia")
+
+North_America_nonUSA <- c(" Canada")
+
+Europe_West <- c(" England", " Germany", " Holand-Netherlands", " Ireland", 
+                 " France", " Greece", " Italy", " Portugal", " Scotland")
+
+Europe_East <- c(" Poland", " Yugoslavia", " Hungary")
+
+
+X <- mutate(X, 
+       native_region = ifelse(nativecountry %in% Asia_East, " East-Asia",
+                ifelse(nativecountry %in% Asia_Central, " Central-Asia",
+                ifelse(nativecountry %in% Central_America, " Central-America",
+                ifelse(nativecountry %in% South_America, " South-America",
+                ifelse(nativecountry %in% Europe_West, " Europe-West",
+                ifelse(nativecountry %in% Europe_East, " Europe-East",
+                ifelse(nativecountry %in% North_America_nonUSA, "Canada",
+                ifelse(nativecountry == " United-States", " United-States", 
+                       " Outlying-US" )))))))))
+
+
+#transform native_region to a factor
+#9 regions now
+X$native_region=as.factor(X$native_region)
+
+```
+
+3. Capital Gain and Capital Loss
+
+```{r, echo=FALSE}
+
+summary(X$capitalgain)
+summary(X$capitalloss)
+
+p0_capitalgain=length(X$capitalgain[which(X$capitalgain==0)])/length(X$capitalgain)
+
+p0_capitalloss=length(X$capitalloss[which(X$capitalloss==0)])/length(X$capitalloss)
+
+#library(xtable)
+#print(xtable(p0_capitalgain, p0_capitalloss))
+
+cat("the proportion of zeros in Capital Gain is ",p0_capitalgain*100,"%","\n",
+    "the proportion of zeros in Capital Loss is ",p0_capitalloss*100,"%", sep = "" )
+
+par(mfrow=c(1,2))
+boxplot(X$capitalgain)
+boxplot(X$capitalloss)
+
+par(mfrow=c(1,2))
+boxplot(X$capitalgain[which(X$capitalgain!=0)],main="Outliers for non-zero Capitalgain")
+boxplot(X$capitalloss[which(X$capitalloss!=0)],main="Outliers for non-zero Capitalloss")
+
+summary(X$capitalgain[which(X$capitalgain!=0)])
+summary(X$capitalloss[which(X$capitalloss!=0)])
+
+```
+From the above boxplots and summary of Captital Gain and Capital Loss variables, we can see that over 90% of the two variables are 0. So we decided to categorize the two variables into groups - one group is for the zeros, and other groups based on quantiles of non-zeros.More specifically, if the value is 0, then it's grouped as "Zero". If the value is not zero and lower than 1st quantile, it's grouped as "Low". The values between 1st and 3rd quantitles are grouped into "Medium" and those higher than 3rd quantile are categorized as "High".
+
+```{r, echo=FALSE}
+
+X=mutate(X, cap_gain=ifelse(X$capitalgain==0, "Zero", 
+                            ifelse(X$capitalgain>0 & X$capitalgain<3464,"Low",
+                                   ifelse(X$capitalgain>=3464  &      X$capitalgain<14084,"Medium","High"))),
+         
+         cap_loss=ifelse(X$capitalloss==0,"Zero",
+                         ifelse(X$capitalloss>0  & X$capitalloss<1672,"Low",
+                                ifelse(X$capitalloss>=1672 & X$capitalloss<1977,"Medium","High")))
+           
+           )
+
+X$cap_gain=as.factor(X$cap_gain)
+X$cap_loss=as.factor(X$cap_loss)
+
+
+```
+
+
+4. Hours per week
+
+From the previous boxplot, we can see there are large number of outliers in the hours_per_week variable. Let's review.
+
+```{r, echo=FALSE}
+boxplot(X$hoursperweek)
+summary(X$hoursperweek)
+
+```
+
+We decide to group this variable in the following way: if the value is lower than the 1st quantile (40), it's called "less_than_40". If a value is between the 1st and 3rd quantitle (45), it's called "between_40_and_45". If the value is higher than 3rd quantile, it's called "higher_than_45".
+
+```{r, echo=FALSE}
+
+X=mutate(X, 
+         hours_w=ifelse(X$hoursperweek<40,"less_than_40",
+                        ifelse(X$hoursperweek>=40 & X$hoursperweek<=45, "between_40_and_45","higher_than_45"))
+         
+         )
+X$hours_w=as.factor(X$hours_w)
+
+hourperwk_table=table(X$hours_w)
+#options(xtable.floating = TRUE)
+#options(xtable.timestamp = "")
+#options(xtable.comment = FALSE)
+#print(xtable(hourperwk_table))
+
+```
+
+5. fnlwgt
+
+```{r, echo=FALSE}
+par(mar=c(1,1,1,1))
+summary(X$fnlwgt)
+hist(X$fnlwgt)
+hist(log(X$fnlwgt))
+hist(scale(log(X$fnlwgt)))
+```
+From the above plots, we can see that the fnlwgt variable generally follows a log-normal distribution and the values are generally large. So we decide to do a log transformation and then a standardization on it.
+
+
+```{r, echo=FALSE}
+X=mutate(X,
+         fnlwgt_logstand=scale(log(X$fnlwgt)))
+
+```
+
+6. Age standardization
+
+```{r, echo=FALSE}
+X=mutate(X,
+        age_stand=scale(X$age) 
+         )
+
+```
+
+7. Drop empty level of workclass
+
+```{r, echo=FALSE}
+
+X$workclass=droplevels(X$workclass)
+```
+
+## Drop the original variables for the re-grouped variables.
+
+```{r, echo=FALSE}
+
+X=subset(X, select = -c(capitalgain, capitalloss,hoursperweek,nativecountry,fnlwgt,age))
+cat("The current structure of the dataset is:")
+str(X)
+```
+
+
+
+
+## Train supervised learning models
+```{r, echo=FALSE,message=FALSE}
+library(caret)
+library(tidyverse)
+
+#train-test split (a 80-20 split)
+#education level & ednum are redundant!!
+#too many levels in the variable lead to overfitting?
+set.seed(123)
+#data split based on the outcome variable - this is actually stratified split!
+X_index=createDataPartition(X$income, p=0.8, list=FALSE)
+X_train=X[X_index,]
+X_test=X[-X_index,]
+
+cat("The percentages of the two levels of target variable are:")
+summary(X_train$income)
+#imbalanced dataset
+```
+
+
+## so randomly select 1/3 rows from the majority group of the training data to balance the training dataset
+
+```{r, echo=FALSE,message=FALSE}
+
+library(dplyr)
+X_train_down=sample_frac(subset(X_train,X_train$income=="N"),0.35,replace = FALSE)
+
+cat("The percentages of the two levels of target variable at the randomly selected sample are:")
+summary(X_train_down$income)
+
+```
+
+## Then combine the randomly down sampled majority group with the original minority group
+
+```{r,echo=FALSE,message=FALSE}
+
+X_train_bal=rbind(X_train_down,subset(X_train,X_train$income=="Y"))
+
+cat("The percentages of the two levels of target variable at the combined balanced sample are:")
+summary(X_train_bal$income)
+```
+
+
+## Then randomly shuffle the rows so that not all "N" incomes are on top and "Y"s are in the end
+```{r, echo=FALSE, message=FALSE}
+rowind=sample(nrow(X_train_bal))
+X_train_bal=X_train_bal[rowind,]
+
+cat("The percentages of the two levels of target variable at the final training dataset are not changed!")
+summary(X_train_bal$income)
+#the ratio of N vs Y is 6337:6005 - X_train_bal will be used to train models!!
+
+
+#default training method for train() is random forest (rf)
+#default is no pre-process
+#default resampling is bootstrap. To change to CV, use the trainControl() function.
+
+#define resampling
+#default method is boot, number is the #of fold if method is cv.
+cv_5=trainControl(method = "cv", number = 5, allowParallel = TRUE )
+
+#tune models
+#can't run rf - run out of rstudio cloud memory
+#knn (78.8%,k=9), glm (85%), gbm-Stochastic Gradient Boosting Tree (86.3%) works
+#LMT - Logistic Model Trees	
+#xgbTree - eXtreme Gradient Boosting
+#adaboost - AdaBoost Classification Trees	
+#lssvmLinear - Least Squares Support Vector Machine	
+#nnet - Neural Network
+#qrnn - Quantile Regression Neural Network	
+#default evaluation metric is accuracy
+#no pre-processing
+
+library(randomForest)
+#t1=proc.time()
+#model_rf=train(income ~.,data = X_train_bal, trControl=cv_5, method="rf")
+#t2=proc.time()
+#time=t2-t1
+
+cat("First, Let's fit a random forset model.")
+#random forest
+model_rf <- randomForest(income~., data = X_train_bal,trControl=cv_5 )
+
+cat("The fitted random forest model:")
+model_rf
+cat("Importance of features based on the random forest model:")
+model_rf$importance
+par(mar=c(1,1,1,1))
+plot(model_rf)
+
+#confusion matrix on training data
+conf_rf=confusionMatrix( predict(model_rf, newdata = X_train_bal), 
+                         reference=X_train_bal$income,
+                         positive="Y") 
+cat("The confusion matrix of random forest model:")
+conf_rf
+#accuracy 94.6%, sens 98.5%, spec 91%, NIR 51.35%, Kappa 0.8929  
+
+cat("Then let's try a knn model.")
+#knn
+model_knn=train(income ~.,data = X_train_bal, trControl=cv_5, method="knn" )
+
+cat("The fitted knn model:")
+model_knn
+#confusion matrix on training data
+conf_knn=confusionMatrix( predict(model_knn, newdata = X_train_bal), 
+                         reference=X_train_bal$income,
+                         positive="Y")
+cat("The confusion matrix of knn model:")
+conf_knn
+#accuracy 84%, sens 87.9%, spec 80%, NIR 51.35%
+
+cat("Next, let's try a glm model.")
+#glm
+model_glm=train(income ~.,data = X_train_bal, trControl=cv_5, method="glm")
+cat("The fitted glm model:")
+model_glm
+
+#confusion matrix on training data
+conf_glm=confusionMatrix( predict(model_glm, newdata = X_train_bal), 
+                         reference=X_train_bal$income,
+                         positive="Y")
+cat("The confusion matrix of glm model:")
+conf_glm
+#accuracy 82%, sens 83.7%, spec 81%, NIR 51.35%
+
+cat("Finally, let's try regularized logistic regression.")
+#logreg
+model_logreg=train(income ~.,data = X_train_bal, trControl=cv_5, method="regLogistic")
+
+#cat("The fitted logistic regression model:")
+#model_logreg
+
+#confusion matrix on training data
+conf_logreg=confusionMatrix( predict(model_logreg, newdata = X_train_bal), 
+                         reference=X_train_bal$income,
+                         positive="Y")
+cat("The confusion matrix of logistic regression model:")
+conf_logreg
+#accuracy 82.5%, sens 84.3%, spec 81%, NIR 51.35%
+
+#saveRDS(model_rf, "model.rds")
+#save(model_rf , file = 'rfmodel.rda')
+```
+
