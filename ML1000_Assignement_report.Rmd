@@ -38,6 +38,9 @@ One key metric of success is that the prediction model can accurately predict th
 ## Identify and prioritize means of data acquisition
 The means of data acquisition is through downloading the US census adult data set.
 
+
+
+
 # **Modeling and Evaluation**
   
 ## **Describe the data**
