@@ -1,0 +1,273 @@
+---
+title: '**Income Prediction. Classification Predictive Modeling**'
+author: "by Anupama r.k, Queenie,Crystal (Yunan) Zhu"
+date: "12/02/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+# **Modeling and Evaluation**
+  
+## **Describe the data**
+
+### Data Dictionary
+
+```{r, echo=FALSE, message=FALSE}
+
+library(ggplot2)
+
+X=read.csv("adultdata.csv", stringsAsFactors = TRUE)
+#str(X)
+
+#summary
+colnames(X) =c("age", "workclass", "fnl_wgt", "education", "education_num", "marital_status", "occupation", "relationship", "race", "sex", "capital_gain", "capital_loss", "hours_per_week", "native_country", "income")
+#str(X)
+cat("The dimension of the dataset is",dim(X)[1],"by",dim(X)[2],".")
+```
+
+There are 32,561 records and 15 columns in the original data set.
+
+```{r,echo=FALSE}
+datatype=sapply(X,class)
+#datatype
+#6 numeric variables
+#9 categorical variables
+```
+
+There are 6 numeric and 9 categorical variables shown as follows:
+
+Column Name        | Data Type   | Column Description  
+-------------------|-------------| ------------------- 
+age                |Integer      |The age of the adult (e.g., 39, 50, 38, etc.)  
+workclass          |Factor       |The work class of the adult (e.g., Private, Self-emp-not-inc, Federal-gov, etc.)   
+fnl_wgt            |Integer      |The weights on the Current Population Survey (CPS) files are controlled to independent estimates of the civilian noninstitutional population of the US (e.g., 77516, 83311, etc.)
+education          |Factor       |The education of the adult (e.g., Bachelors, Some-college, 10th, etc.)
+education_num      |Integer      |The number years of the adult's education (e.g., 13, 9, 7, etc.)
+marital_status     |Factor       |The marital status of the adult (e.g., Divorced, Never-married, Separated, etc.)  
+occupation         |Factor       |The occupation of the adult (e.g., Tech-support, Craft-repair, Sales, etc. ) 
+relationship       |Factor       |The relationship of the adult in a family (e.g., Wife, Own-child, Husband, etc.  )
+race               |Factor       |The race of the adult (e.g., White, Asian-Pac-Islander, Amer-Indian-Eskimo, etc.)
+sex                |Factor       |The gender of the adult.(Female, Male )
+capital_gain       |Integer      |The capital gain of the adult (e.g., 0, 2174, 14084, etc.)
+capital_loss       |Integer      |The capital loss of the adult (e.g., 0, 1408,2042, etc.)
+hours_per_week     |Integer      |The number of working hours each week for the adult (e.g. 40, 13, 16, etc.)
+native_country     |Factor       |The native country of the adult (e.g. Cambodia, Canada, Mexico, etc.)
+income             |Factor       |The yearly income of the adult at 2 levels: <=50K and >50K.
+
+### Data Description
+
+#### First, let's check whether there are duplicates in the dataset.
+
+```{r, echo=FALSE,message=FALSE}
+library(tidyverse)
+#library(hutils)
+#Remove duplicated rows based on all columns
+# - if two rows are exactly the same, keep only one of them
+X_nodup=distinct(X,X[,1:15], keep_all=TRUE)[,-16]
+
+#identify duplicated rows
+X_dup=X[duplicated(X),]
+
+cat("The number of duplicated records in the dataset is",dim(X_dup)[1],".")
+#dim(X_dup)
+
+#use X_nodup for all later analysis
+
+#unique(X_dup$fnl_wgt)
+cat("Let's look at several examples of the duplicated records:")
+X_dup_sample=subset(X,fnl_wgt==308144 | fnl_wgt== 250051)
+X_dup_sample=X_dup_sample[order(X_dup_sample$fnl_wgt),]
+
+X=X_nodup
+```
+
+Let's look at a sample of duplicated records:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+library(xtable)
+options(xtable.floating = FALSE)
+options(xtable.timestamp = "")
+options(xtable.comment = FALSE)
+
+#library(dplyr)
+#library(DT)
+#library(knitr)
+#print(xtable(X_dup_sample[,1:8]), include.rownames=FALSE)
+print(xtable(X_dup_sample[,1:8]))
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+
+#print(xtable(X_dup_sample[,9:15],caption = "Adult Income Data Sample", caption.placement = "top"))
+
+print(xtable(X_dup_sample[,9:15]))  
+
+
+```
+  
+So we will exclude the 24 duplicated rows from all later analysis.
+  
+#### Then let's check whether there are any missing values in the dataset.
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+#check missing values of each column
+m=c()
+for (i in 1:ncol(X))  {
+  m[i]=sum(grepl("?",X[,i],fixed = TRUE))
+}
+missval=paste0(colnames(X),rep("-",15),m,rep(" missing values",))
+#cat("The number of missing values for each variable are:")
+#missval
+
+#Recode missing values to be more standard - replace ? with NA
+#ifelse will coerce the factor values into intergers, thus use as.character to main the original factor values
+X$workclass=ifelse(X$workclass==" ?",NA,as.character(X$workclass))
+X$occupation=ifelse(X$occupation==" ?",NA,as.character(X$occupation))
+X$native_country=ifelse(X$native_country==" ?",NA,as.character(X$native_country))
+
+#then transform the characters back to factors
+X$workclass=as.factor(X$workclass)
+X$occupation=as.factor(X$occupation)
+X$native_country=as.factor(X$native_country)
+#str(X)
+
+#display the proportion of missing values
+pMiss = function(x){sum(is.na(x))/length(x)*100}
+#cat("The percentages of missing values for each variable are:")
+#apply(X,2,pMiss)
+
+datatype=sapply(X,class)
+
+#Visualize missing data
+#install.packages("VIM") #large package install before class
+#break dataset into 2 pieces if you have low memory computer...
+```
+
+```{r , echo=FALSE, message=FALSE}
+library(VIM)
+
+aggr_plot = aggr(X, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels=names(data), cex.axis=.7, gap=3, ylab=c("Histogram of missing data","Pattern"))
+
+```
+
+From the above, there are missing values in the data and all the missing values are from categorical variables. Thus we decide to remove the records with missing values.  
+  
+  
+  
+Now let's view the summary of the 6 numeric columns:  
+
+        
+```{r echo=FALSE, message=FALSE, paged.print=FALSE, results='asis'}
+
+
+sum_num=matrix(,15,6)
+
+for (i in 1:ncol(X)) {
+  
+  if (class(X[,i])=="integer") {
+    
+    sum_num[i,]=summary(X[,i])[1:6]
+  } 
+  
+}
+sum_num=sum_num[complete.cases(sum_num),]
+
+colnames(sum_num)=names(summary(X$age))
+rownames(sum_num)=colnames(X)[datatype=="integer"]
+
+print(xtable(sum_num))  
+  
+
+
+```
+  
+  
+Let's take a clearer look at the numeric values by visualizing their distributions using histograms, except for capital gain and capital loss.
+
+
+```{r, echo=FALSE,message=FALSE}  
+
+p1 =   ggplot(data=X)+ geom_histogram(mapping=aes(x=age),binwidth = 0.5,color="darkblue", fill="lightblue")
+
+p2 =   ggplot(data=X)+ geom_histogram(mapping=aes(x=fnl_wgt),binwidth = 50,color="darkblue", fill="lightblue")
+  
+p3 =    ggplot(data=X)+ geom_histogram(mapping=aes(education_num),binwidth = 1,color="darkblue", fill="lightblue")
+      
+p4 =    ggplot(data=X)+ geom_histogram(mapping=aes(hours_per_week),binwidth = 1,color="darkblue", fill="lightblue")
+        
+library(gridExtra)
+grid.arrange(p1,p2,p3,p4,nrow=2,ncol=2)
+
+
+```
+
+
+Let's use boxplots to see whether there are outliers for each numeric variable.
+
+```{r, echo=FALSE}
+par(mar = c(2,2,2,2))
+par(mfrow=c(2,3))
+for (i in 1:ncol(X)){
+  
+  if (class(X[,i])=="integer") {
+    boxplot(X[,i], main=colnames(X)[i])
+  }
+}
+
+```
+
+
+Since there are large number of zeros in capitalgain & capitalloss variables, let's check if there are outliers for non-zero values
+
+
+```{r, echo=FALSE, message=FALSE}
+par(mar = c(1,1,1,1))
+par(mfrow=c(1,2))
+boxplot(X$capital_gain[which(X$capital_gain!=0)],main="Outliers for non-zero Capital gain")
+
+boxplot(X$capital_loss[which(X$capital_loss!=0)],main="Outliers for non-zero Capital loss")
+
+
+```
+
+
+
+We can see there are still outliers even excluding zeros for capital gain and capital loss variables.
+
+
+###  Then let's look at the distributions of categorical variables by the target.  
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+par(mar=c(1,1,1,1))
+
+ggplot(X, aes(workclass, fill = income)) + geom_bar()
+
+```
+
+From the above bar chart we can see the majority of adults in the census were working in private sectors.
+
+```{r,echo=FALSE}
+ggplot(X, aes(education, fill = income)) + geom_bar()
+ggplot(X, aes(marital_status, fill = income)) + geom_bar()
+ggplot(X, aes(relationship, fill = income)) + geom_bar()
+ggplot(X, aes(occupation, fill = income)) + geom_bar()
+ggplot(X, aes(native_country, fill = income)) + geom_bar()
+ggplot(X, aes(race, fill = income)) + geom_bar()
+ggplot(X, aes(sex, fill = income)) + geom_bar()
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
