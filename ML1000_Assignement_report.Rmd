@@ -52,7 +52,6 @@ The means of data acquisition is through downloading the US census adult data se
 
 The target variable is income. 
 
-## Use pre-processing methods (as needed) for dimensionality reduction, scaling, etc. Remove variables that are not needed/useful for the analysis 
 
 ## Describe the final dataset that is used for classification (include a description of any newly formed variables you created).
 
@@ -80,6 +79,11 @@ cat("The dimension of the dataset is",dim(X)[1],"by",dim(X)[2],".")
 ```
 
 There are 32,561 records and 15 columns in the original data set.
+
+To look at the structure of the dataset:
+```{r}
+str(X)
+```
 
 ```{r,echo=FALSE}
 datatype=sapply(X,class)
@@ -109,6 +113,11 @@ native_country     |Factor       |The native country of the adult (e.g. Cambodia
 income             |Factor       |The yearly income of the adult at 2 levels: <=50K and >50K.
 
 ### Data Description
+
+To look at some statistics for the different variables:
+```{r}
+summary(X)
+```
 
 #### First, let's check whether there are duplicates in the dataset.
 
@@ -204,7 +213,8 @@ aggr_plot = aggr(X, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels
 
 ```
 
-From the above, there are missing values in the data and all the missing values are from categorical variables. Thus we decide to remove the records with missing values.  
+From the above, there are missing values in the data and all the missing values are from categorical variables (occupation, workclass, and native country. Thus we decide to remove the records with missing values. 
+  
   
 ### Comparing records with at least one missing value to those without any missing values.  
 
@@ -378,8 +388,9 @@ of people earn <=50K.
 ggplot(data = X, aes(y = native_country, fill = income))+
   geom_bar(position = "stack")
 ```
-Most people surveyed come from the United States. This makes sense as the census was conducted in the US. Other than the United States, 
-the second highest number of people come from Mexico.
+Most people surveyed come from the United States. This makes sense as the census was conducted in the US. Other than the United States, the second highest number of people come from Mexico.
+
+For Hong we believe this stands for Hong Kong, so we will change this in the dataset. 
 
 ```{r}
 ggplot(X, aes(race, fill = income)) + geom_bar()
@@ -397,9 +408,20 @@ There are more than twice as many males surveyed in this census compared to fema
 
 
 
+# Remove variables which are not useful for the analysis
+
+The variable education_num conveys the same exact information as Education, except in numeric form. We decided to keep
+the education variable and remove education_num from the analysis to prevent redundant information.
 
 
+```{r}
+#look at distinct native countries and the counts for each:
+X %>% count(native_country)
+```
 
-
+#replace "Hong" to "Hong Kong" in native_country column for clarity:
+```{r}
+X$native_country <-  str_replace(as.character(X$native_country), "Hong", "Hong Kong")
+```
 
 
