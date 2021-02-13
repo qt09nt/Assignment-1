@@ -39,6 +39,22 @@ One key metric of success is that the prediction model can accurately predict th
 The means of data acquisition is through downloading the US census adult data set.
 
 
+# Data Preparation 
+
+## Describe the purpose of the data set you selected (i.e., why was this data collected in the first place?).
+
+## Describe how you would define and measure the outcomes from the dataset.
+
+##How would you measure the effectiveness of a good prediction algorithm or clustering algorithm? 
+
+
+## Define and prepare your target variables. Use proper variable representations (int, float, one-hot, etc.).
+
+The target variable is income. 
+
+## Use pre-processing methods (as needed) for dimensionality reduction, scaling, etc. Remove variables that are not needed/useful for the analysis 
+
+## Describe the final dataset that is used for classification (include a description of any newly formed variables you created).
 
 
 # **Modeling and Evaluation**
@@ -285,11 +301,23 @@ ggplot(X, aes(workclass, fill = income)) + geom_bar()
 From the above bar chart we can see the majority of adults in the census were working in private sectors.
 
 ```{r,echo=FALSE}
-ggplot(X, aes(education, fill = income)) + geom_bar()
-ggplot(X, aes(marital_status, fill = income)) + geom_bar()
+#plotting education vs income
+ggplot(data = data, aes(y = education, fill = income)) +
+  geom_bar(position = "stack")   #different bars stacked together
+
+#plotting marital status vs. income
+ggplot(data = data, aes(y = marital_status, fill = income))+
+  geom_bar(position = "stack")
+
 ggplot(X, aes(relationship, fill = income)) + geom_bar()
-ggplot(X, aes(occupation, fill = income)) + geom_bar()
-ggplot(X, aes(native_country, fill = income)) + geom_bar()
+
+#plotting occupation vs income
+ggplot(data = data, aes(y = occupation, fill = income))+
+  geom_bar(position = "stack")
+#plotting native country vs. income
+ggplot(data = data, aes(y = native_country, fill = income))+
+  geom_bar(position = "stack")
+
 ggplot(X, aes(race, fill = income)) + geom_bar()
 ggplot(X, aes(sex, fill = income)) + geom_bar()
 
