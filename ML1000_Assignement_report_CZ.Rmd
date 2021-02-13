@@ -512,21 +512,37 @@ colnames(pmat)=colnames(X_cat)
 rownames(pmat)=colnames(X_cat)
 colnames(crammat)=colnames(X_cat)
 rownames(crammat)=colnames(X_cat)
-crammat
+
 
 ```
+
+
+The test statistics from Chiq-Square Test between each pair of the categorical variables.  
+
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 chisq_table=xtable(chisqmat)
 digits(chisq_table)=2
 print(chisq_table,scalebox=.8)
+```
 
-cat("\n")
+
+The p-values from the Chi-Square Test between each pair of the categorical variables.  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+
 pmat_table=xtable(pmat)
 digits(pmat_table)=2
 print(pmat_table, scalebox=.9)
 
-cat("\n")
+```
+
+
+The Cramer's V statistics between each pair of categorical variables to measure their associations.  
+
+
+``````{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
 crammat_table=xtable(crammat)
 digits(crammat_table)=2
 print(crammat_table,scalebox=.9)
@@ -573,6 +589,10 @@ cat("Now the levels of the target variable are:")
 summary(X$income)
 
 ```
+
+
+
+
 
 
 
