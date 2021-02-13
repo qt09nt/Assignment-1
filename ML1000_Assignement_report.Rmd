@@ -1,14 +1,48 @@
 ---
 title: '**Income Prediction. Classification Predictive Modeling**'
-author: "by Anupama r.k, Queenie,Crystal (Yunan) Zhu"
+author: "by Anupama r.k, Queenie Tsang, Crystal (Yunan) Zhu"
 date: "12/02/2021"
 output:
   pdf_document: default
   html_document: default
 ---
+
+# Business and Data Understanding 
+The data we are using comes from the US Census data collected in 1994. The dataset can be obtained at the UCI Machine Learning Repository (https://archive.ics.uci.edu/ml/datasets/census+income). The donor of the dataset is Ronny Kohavi and Barry Becker, Data Mining and Visualization, Silicon Graphics. The current dataset
+was extracted by Barry Becker from the 1994 Census database. 
+
+## Reformulate a problem statement as an analytics problem
+
+The current business problem we are trying to solve is how to predict the income of a given customer into 2 classes: less than or equal to $50 thousand USD, or greater than $50 thousand USD. This is a business problem, because given some demographic information such as age, sex, education, marital status, occupation, we want to be able to predict the customer's income into the =<50K category or >50K category. If we can predict this income accurately, companies can use this information to
+determine whether they should allocate resources to market some premium grade products to the customer. 
+
+
+## Develop a proposed set of drivers and relationships to inputs
+The output function is the predictiong of income, and whether it belongs to the =< $50K class or to the >$50K class. The input variables are the age, sex, occupation, workclass, education level, education number, relationship, marital status, final weight(refering to the weight of that demographic class within the current population survey), the capital gain, capital loss, hours per week (of work) and the native country.  
+- How does age affect the income class of a customer?
+- How does education level affect the income class of a customer?
+- What types of occupation is associated with income greater than $50K or with income less than or equal to $50K?
+
+## State the set of assumptions related to the problem 
+One assumption related to this problem is that the relationships between the input variables (such as age, occupation, workclass, marital status) to the target variable income obtained through the 1994 census data will hold true to what is observed today in 2021. 
+
+## Define key metrics of success 
+One key metric of success is that the prediction model can accurately predict the income class, given the input information.  
+
+## Describe how you have applied the ethical ML framework
+
+
+
+
+
+## Identify and prioritize means of data acquisition
+The means of data acquisition is through downloading the US census adult data set.
+
 # **Modeling and Evaluation**
   
 ## **Describe the data**
+
+
 
 ### Data Dictionary
 
