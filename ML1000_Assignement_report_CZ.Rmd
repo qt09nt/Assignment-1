@@ -61,7 +61,8 @@ The target variable is income.
 
 
 # **Modeling and Evaluation**
-  
+ 
+
 ## **Describe the data**
 
 ### Data Dictionary
@@ -571,14 +572,197 @@ X=subset(X,select = -education_num)
 
 ```
 
+**2. Re-group Native countries.**
 
+There are 41 levels, namely 41 different countries, in the dataset. Since too many levels for a categorical variable could lead to overfitting, we decide to regroup the native countries into regions.
+
+```{r, echo=FALSE}
+
+table(subset(X,native_country==" South")$race)
+```
+
+Since the race of almost all records with Native country "South" is "Asian-Pac-Islander", we think the country "South" is very likely to be South Korea. So we decided to group the country "South" into Asia_East
+
+
+```{r, message=FALSE,warning=FALSE}
+Asia_East <- c(" Cambodia", " China", " Hong", " Laos", " Thailand",
+               " Japan", " Taiwan", " Vietnam", " South", " Philippines")
+
+Asia_Central <- c(" India", " Iran")
+
+Central_America <- c(" Cuba", " Guatemala", " Jamaica", " Nicaragua", 
+                     " Puerto-Rico",  " Dominican-Republic", " El-Salvador", 
+                     " Haiti", " Honduras",  " Trinadad&Tobago")
+
+South_America <- c(" Ecuador", " Peru", " Columbia")
+
+North_America <- c(" Canada", " United-States"," Mexico", " Outlying-US(Guam-USVI-etc)")
+
+Europe_West <- c(" England", " Germany", " Holand-Netherlands", " Ireland", 
+                 " France", " Greece", " Italy", " Portugal", " Scotland")
+
+Europe_East <- c(" Poland", " Yugoslavia", " Hungary")
+
+
+X <- mutate(X, 
+       native_region = ifelse(native_country %in% Asia_East, " East-Asia",
+                ifelse(native_country %in% Asia_Central, " Central-Asia",
+                ifelse(native_country %in% Central_America, " Central-America",
+                ifelse(native_country %in% South_America, " South-America",
+                ifelse(native_country %in% Europe_West, " Europe-West",
+                ifelse(native_country %in% Europe_East, " Europe-East",
+                ifelse(native_country %in% North_America, "North America",                           "Other"))))))))
+
+#convert native_region to a factor
+#7 regions now
+X$native_region=as.factor(X$native_region)
+
+```
+
+**3. Re-group Capital Gain and Capital Loss.**  
+
+
+```{r, echo=FALSE}
+
+#summary(X$capital_gain)
+#summary(X$capital_loss)
+
+p0_capitalgain=length(X$capital_gain[which(X$capital_gain==0)])/length(X$capital_gain)
+
+p0_capitalloss=length(X$capital_loss[which(X$capital_loss==0)])/length(X$capital_loss)
+
+#library(xtable)
+#print(xtable(p0_capitalgain, p0_capitalloss))
+
+cat("the proportion of zeros in Capital Gain is ",p0_capitalgain*100,"%","\n",
+    "the proportion of zeros in Capital Loss is ",p0_capitalloss*100,"%", sep = "" )
+
+summary(X$capital_gain[which(X$capital_gain!=0)])
+summary(X$capital_loss[which(X$capital_loss!=0)])
+
+```
+Based the boxplots and summary of Captital Gain and Capital Loss variables in the Data Description section, and the situation that over 90% of the two variables are 0, we decided to categorize these two variables into groups in the following way:
+- the first group is for the zeros;
+- the other groups based on quantiles of non-zeros. More specifically, if a value is larger than zero and lower than the 1st quantile, it's grouped as "Low". 
+- The values between 1st and 3rd quantitles are grouped into "Medium" and those higher than the 3rd quantile are categorized as "High".  
+
+
+```{r}
+
+X=mutate(X, cap_gain=ifelse(X$capital_gain==0, "Zero", 
+                     ifelse(X$capital_gain>0 & X$capital_gain<3464,"Low",
+                     ifelse(X$capital_gain>=3464  &      X$capital_gain<14084,"Medium","High"))),
+         
+         cap_loss=ifelse(X$capital_loss==0,"Zero",
+                  ifelse(X$capital_loss>0  & X$capital_loss<1672,"Low",
+                  ifelse(X$capital_loss>=1672 & X$capital_loss<1977,"Medium","High")))
+           
+           )
+
+X$cap_gain=as.factor(X$cap_gain)
+X$cap_loss=as.factor(X$cap_loss)
+
+
+```
+
+**4. Hours per week**
+
+From the boxplot and histogram in the Data Description section before, we've known there are large number of outliers in the hours_per_week variable.  
+
+
+So We decide to group this variable in the following way:
+- if the value is lower than the 1st quantile (40), it's called "less than 40 hours";  
+- if a value is between the 1st and 3rd quantitle (40 to 45), it's called "40 to 45 hours";    
+- if the value is higher than 3rd quantile but lower than 50 , it's called "45 to 50 hours";  
+- if the value is between 50 and 60, it's called "50 to 60 hours";  
+- if the value is between 60 and 70, it's called "60 to 70 hours";  
+- if the value is between 70 and 80, it's called "70 to 80 hours";  
+- if the value is more than 80, it's called "greater than 80 hours";  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+summary(X$hours_per_week)
+
+X=mutate(X, 
+         weekly_hours=ifelse(X$hours_per_week<40,"less than 40 hrs",
+                        ifelse(X$hours_per_week<=45, "40 to 45 hrs",
+                        ifelse(X$hours_per_week<=50, "45 to 50 hrs",
+                        ifelse(X$hours_per_week<=60, "50 to 60 hrs",
+                        ifelse(X$hours_per_week<=70, "60 to 70 hrs",
+                        ifelse(X$hours_per_week<=80, "70 to 80 hours",
+                               "greater than 80 hrs")))))))
+         
+         
+X$weekly_hours=as.factor(X$weekly_hours)
+
+table4=as.matrix(table(X$weekly_hours))
+print(xtable(table4, caption = "Frequency table of weekly_hours" ) )
+
+
+```
+
+
+**5. Drop empty level of work class.**
+
+
+We noticed one of the levels of the work class variable does not have any records in it, so we decide to drop that level to avoid potential issues caused by empty cells.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+print(xtable(as.matrix(table(X$workclass))))
+X$workclass=droplevels(X$workclass)
+```
+
+
+**6. Log transformation and standardization of fnl_wgt - OPTIONAL**
+
+```{r}
+par(mar=c(2,2,2,2))
+hist(X$fnl_wgt)
+hist(log(X$fnl_wgt))
+hist(scale(log(X$fnl_wgt)))
+```
+
+
+From the above histograms, we can see that the fnl_wgt generally follows a log-normal distribution and the values are generally large. So we decide to perform a log transformation and then a standardization on it, after which the variable is generally normally distributed with small values.  
+
+
+```{r, echo=FALSE}
+X=mutate(X,
+         fnlwgt_logstand=scale(log(X$fnl_wgt)))
+
+```
+
+**6. Age standardization.**  
+
+```{r}
+X=mutate(X,
+        age_stand=scale(X$age) 
+         )
+
+```
+
+
+To make age in the same range of the standardized fnl_wgt, we decide to standardize age as well.
+
+
+
+**Drop the variables that would not be used for building predictive models.**
+
+```{r, echo=FALSE}
+
+X=subset(X, select = -c(capital_gain, capital_loss,hours_per_week,native_country))
+cat("The current structure of the dataset is:")
+str(X)
+```
 
 
 
 
 ## Modeling
 
-For the simplicity in coding, let's recode the values of target variable to be "Y", meaning yearly income is higher than 50K USA, and "N", indicating the income is no more than 50K.
+
+First, for the simplicity in coding, let's recode the values of target variable to be "Y", meaning yearly income is higher than 50K USA, and "N", indicating the income is no more than 50K.  
 
 ```{r,echo=FALSE}
 
@@ -591,8 +775,7 @@ summary(X$income)
 ```
 
 
-
-
+**Create different sets of features to train the models.**
 
 
 
