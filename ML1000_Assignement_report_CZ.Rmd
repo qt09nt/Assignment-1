@@ -12,8 +12,12 @@ was extracted by Barry Becker from the 1994 Census database.
 
 ## Reformulate a problem statement as an analytics problem
 
-The current business problem we are trying to solve is how to predict the income of a given customer into 2 classes: less than or equal to $50 thousand USD, or greater than $50 thousand USD. This is a business problem, because given some demographic information such as age, sex, education, marital status, occupation, we want to be able to predict the customer's income into the =<50K category or >50K category. If we can predict this income accurately, companies can use this information to
-determine whether they should allocate resources to market some premium grade products to the customer. 
+Our client is looking to open a business in a new location. The client is looking to open a store that sells products of one of their
+luxury brands. The luxury brand is trying to target people with income of above 50K. 
+The current business problem we are trying to solve is how to predict the income of a given customer into 2 classes: less than or equal to $50 thousand USD, or greater than $50 thousand USD. This is a business problem, because given some demographic information such as age, sex, education, marital status, occupation, we want to be able to predict the customer's income into the =<50K category or >50K category. 
+
+If we can predict this income accurately, the company can use this information to determine whether they should allocate resources to market some premium grade products to the customer. The marketing team can use this tool to find the audience for our marketing pitch in anticipation of the branch opening and improve targeted advertising to people who have income above 50K. The tool allows a
+true/false output against each demographic item.
 
 
 ## Develop a proposed set of drivers and relationships to inputs
@@ -252,7 +256,16 @@ From the above bar charts comparing the distributions of 7 variables of the grou
 
 Since the proportion of missing values is relatively small (7%) where we would have 30K records left, and it's generally the same for people with income higher and lower than 50K USD, we think it would be reasonable to remove the records for our analysis in this report. If we had more time, we'd recommend fitting models separately for female and male since they have different willingness to answer occupation, work class or native country related questions, which could be strong predictors for adult income.  
 
-  
+
+### Remove rows with missing values - THIS IS OPTIONAL!!
+
+```{r,echo=FALSE}
+X=X[complete.cases(X),]
+cat("Now the dimension of the dataset becomes:")
+dim(X)
+
+```
+
   
 Now let's view the summary of the 6 numeric columns:  
 
@@ -421,6 +434,148 @@ There are more than twice as many males surveyed in this census compared to fema
 
 
 ### Explore relationships between attributes
+
+**Pearson's correlation between numeric variables.**
+
+
+```{r, message=FALSE, warning=FALSE}
+#Display the chart of a correlation matrix
+library(PerformanceAnalytics)
+numindex=datatype=="integer"
+chart.Correlation(scale(X[,numindex]), histogram=TRUE, pch=19)
+```
+
+From the chart of the correlation matrix, we can see that while the magnitude of the correlations are small, all of them are statistically significant. 
+
+
+The following correlogram confirms that the correlations between numeric variables are very small, yet they are significantly different from zero, probably due to large sample size.
+
+
+```{r, message=FALSE, warning=FALSE}
+library("Hmisc")
+
+cormat <- rcorr(as.matrix(X[,numindex]))
+
+#Draw a correlogram
+library(corrplot)
+corrplot(cormat$r, type = "upper", 
+         tl.col = "black", tl.srt = 45, p.mat = cormat$P, sig.level = 0.01, insig = "blank")
+
+```
+
+
+**Chi-square test & Cramer's V to show associations between categorical variables**
+
+
+```{r, echo=FALSE,message=FALSE}
+#If many of the expected counts are very small, the Chi-squared approximation may be poor
+
+X_cat=subset(X,select=c(datatype=="factor"))
+
+#all combinations from 1-9
+#expand.grid will create dups (c(2,1) & c(1,2)), so don't use it
+allcom=combn(ncol(X_cat),2)
+#allcom is 2*36, each column is a combination of 1-9
+#the first row is the index for var1, the second row is the index for var2
+teststat=c()
+pvalue=c()
+ind1=c()
+ind2=c()
+cramv=c()
+chisqmat=matrix(,9,9)
+pmat=matrix(,9,9)
+crammat=matrix(,9,9)
+
+library(DescTools)
+
+#use suppressWarnings() to suppress showing the warning msgs from chisq.test
+
+suppressWarnings (
+  for (i in 1:ncol(allcom)) {
+    
+    teststat[i]=chisq.test(X[,allcom[,i][1]],X[,allcom[,i][2]])$statistic
+    pvalue[i]=chisq.test(X[,allcom[,i][1]],X[,allcom[,i][2]])$p.value
+    ind1[i]=allcom[,i][1]
+    ind2[i]=allcom[,i][2]
+    cramv[i]=CramerV(X[,allcom[,i][1]],X[,allcom[,i][2]])
+    chisqmat[allcom[,i][1],allcom[,i][2]]=teststat[i]
+    pmat[allcom[,i][1],allcom[,i][2]]=pvalue[i]
+    crammat[allcom[,i][1],allcom[,i][2]]=cramv[i]
+    
+  })
+
+#sum(pvalue<0.05)
+#all pvalues are less than 0.05 - all categorical variables are significantly associated with each other
+colnames(chisqmat)=colnames(X_cat)
+rownames(chisqmat)=colnames(X_cat)
+colnames(pmat)=colnames(X_cat)
+rownames(pmat)=colnames(X_cat)
+colnames(crammat)=colnames(X_cat)
+rownames(crammat)=colnames(X_cat)
+crammat
+
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+chisq_table=xtable(chisqmat)
+digits(chisq_table)=2
+print(chisq_table,scalebox=.8)
+
+cat("\n")
+pmat_table=xtable(pmat)
+digits(pmat_table)=2
+print(pmat_table, scalebox=.9)
+
+cat("\n")
+crammat_table=xtable(crammat)
+digits(crammat_table)=2
+print(crammat_table,scalebox=.9)
+```
+
+
+## Feature Engineering
+
+From the above exploratory analysis on the numeric and categorical variables, we think the following transformations can be adopted to help with building predictive models.
+
+**1.Education and education number are redundant.**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+table1=as.matrix(table(X$education,X$education_num))
+print(xtable(table1),scalebox=.9)
+
+```
+
+
+From the above perfectly 1-1 relationship, we can see these two variabls are essentially exact the same. So we decide to remove the educationnum variable.
+
+```{r, echo=FALSE}
+
+#drop educationnum variable
+X=subset(X,select = -education_num)
+
+```
+
+
+
+
+
+
+## Modeling
+
+For the simplicity in coding, let's recode the values of target variable to be "Y", meaning yearly income is higher than 50K USA, and "N", indicating the income is no more than 50K.
+
+```{r,echo=FALSE}
+
+#
+X$income=ifelse(X$income==" <=50K","N","Y")
+X$income=as.factor(X$income)
+cat("Now the levels of the target variable are:")
+summary(X$income)
+
+```
+
+
+
 
 
 
