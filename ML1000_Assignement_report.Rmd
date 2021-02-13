@@ -68,6 +68,7 @@ The target variable is income.
 ```{r, echo=FALSE, message=FALSE}
 
 library(ggplot2)
+library(VIM)
 
 X=read.csv("adultdata.csv", stringsAsFactors = TRUE)
 #str(X)
@@ -158,7 +159,7 @@ print(xtable(X_dup_sample[,9:15]))
 
 ```
   
-So we will exclude the 24 duplicated rows from all later analysis.
+The 24 duplicated rows will be removed from all later analysis.
   
 #### Then let's check whether there are any missing values in the dataset.
 
@@ -205,6 +206,48 @@ aggr_plot = aggr(X, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels
 
 From the above, there are missing values in the data and all the missing values are from categorical variables. Thus we decide to remove the records with missing values.  
   
+### Comparing records with at least one missing value to those without any missing values.  
+
+
+In order to better understand the patterns of the missing values, let's look at some descriptions of the records with missing values.
+
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+library(gridExtra)
+X_wmiss=subset(X,is.na(workclass) | is.na(occupation) | is.na(native_country))
+
+X_nomiss=setdiff(X,X_wmiss)
+
+X$missind=ifelse(is.na(X$workclass) | is.na(X$occupation) | is.na(X$native_country),"Y","N")
+
+#flip the coordinates/make horizontal barplots due to large number of levels in categorical variables
+
+library(ggplot2)
+p1 = ggplot(X, aes(age, fill = missind)) + geom_bar() + coord_flip()
+
+p2 = ggplot(X, aes(education, fill = missind)) + geom_bar() + coord_flip()
+p3 = ggplot(X, aes(marital_status, fill = missind)) + geom_bar() + coord_flip()
+p4 = ggplot(X, aes(relationship, fill = missind)) + geom_bar() + coord_flip()
+p5 = ggplot(X, aes(race, fill = missind)) + geom_bar() + coord_flip()
+p6 = ggplot(X, aes(sex, fill = missind)) + geom_bar() + coord_flip()
+p7 = ggplot(X, aes(hours_per_week, fill = missind)) + geom_bar() + coord_flip()
+p8 = ggplot(X, aes(income, fill = missind)) + geom_bar() + coord_flip()
+
+p1
+p2
+p3
+p4
+p5
+p6
+p7
+p8
+
+```
+
+
+From the above bar charts comparing the distributions of 7 variables of the group that do not have missing values and the group that have at least one missing records, we can see that the missing records are generally evenly  distributed across all ages, education level, marital status, family relationship, race, working hours per week and the target variable income. When compared with the whole population in the census, the percentages of records with missing values are having slightly lower percentages in the age group between 20-50, Married civ spouse marital status, husband, and slightly higher percentages for 60-70 years old, never-married. Males tend to have fewer missing records than females. 
+
+Since the proportion of missing values is relatively small (7%) where we would have 30K records left, and it's generally the same for people with income higher and lower than 50K USD, we think it would be reasonable to remove the records for our analysis in this report. If we had more time, we'd recommend fitting models separately for female and male since they have different willingness to answer occupation, work class or native country related questions, which could be strong predictors for adult income.  
   
   
 Now let's view the summary of the 6 numeric columns:  
@@ -212,7 +255,7 @@ Now let's view the summary of the 6 numeric columns:
         
 ```{r echo=FALSE, message=FALSE, paged.print=FALSE, results='asis'}
 
-
+X=X[,-16]
 sum_num=matrix(,15,6)
 
 for (i in 1:ncol(X)) {
@@ -288,13 +331,13 @@ boxplot(X$capital_loss[which(X$capital_loss!=0)],main="Outliers for non-zero Cap
 We can see there are still outliers even excluding zeros for capital gain and capital loss variables.
 
 
-###  Then let's look at the distributions of categorical variables by the target.  
+###  Distributions of categorical variables by target variable 
 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 par(mar=c(1,1,1,1))
 
-ggplot(X, aes(workclass, fill = income)) + geom_bar()
+ggplot(X, aes(y = workclass, fill = income)) + geom_bar()
 
 ```
 
@@ -304,28 +347,52 @@ From the above bar chart we can see the majority of adults in the census were wo
 #plotting education vs income
 ggplot(data = data, aes(y = education, fill = income)) +
   geom_bar(position = "stack")   #different bars stacked together
+```
+The majority of people earning less than $50K are high school graduates. The next largest education group is some college, and the 
+third largest education group is Bachelors. 
 
+```{r}
 #plotting marital status vs. income
-ggplot(data = data, aes(y = marital_status, fill = income))+
+ggplot(data = X, aes(y = marital_status, fill = income))+
   geom_bar(position = "stack")
+```
+The majority of people surveyed are Married-civ-spouse, and in this marital status category, the income is roughly equally divided
+between <=50K or >50K. The second largest category is Never-married, with the majority of people earning <=50K. 
 
+
+```{r}
 ggplot(X, aes(relationship, fill = income)) + geom_bar()
+```
+Most people surveyed in the census belong to the Husband category of relationships, with slightly more people earning less than or equal to 50K. However, in the Husband category, there is almost an even split between the 2 target income classes. Not-in-family is the second largest category for relationships and the majority people in this category have income <=50K.
 
+```{r}
 #plotting occupation vs income
-ggplot(data = data, aes(y = occupation, fill = income))+
+ggplot(data = X, aes(y = occupation, fill = income))+
   geom_bar(position = "stack")
+```
+Most common occupations are Prof-specialty, Exec-managerial, Craft-repair, Sales, and Adm-clerical. For Exec-managerial, and Prof-specialty, there is an even number of people earning <=50K and >50K. For Craft-repair, Adm-clerical, and Sales, the majority
+of people earn <=50K.
+
+```{r}
 #plotting native country vs. income
-ggplot(data = data, aes(y = native_country, fill = income))+
+ggplot(data = X, aes(y = native_country, fill = income))+
   geom_bar(position = "stack")
+```
+Most people surveyed come from the United States. This makes sense as the census was conducted in the US. Other than the United States, 
+the second highest number of people come from Mexico.
 
+```{r}
 ggplot(X, aes(race, fill = income)) + geom_bar()
+```
+Most people surveyed are White, and earn <=50K. The second highest race category is Black.
+
+```{r}
 ggplot(X, aes(sex, fill = income)) + geom_bar()
-
-
+```
 
 ```
 
-
+There are more than twice as many males surveyed in this census compared to females. 
 
 
 
