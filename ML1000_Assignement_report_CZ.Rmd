@@ -746,23 +746,36 @@ X=mutate(X,
 To make age in the same range of the standardized fnl_wgt, we decide to standardize age as well.
 
 
+**7. Group marital status.**  
+
+
+```{r}
+X=mutate(X,
+         marital_status_group=ifelse(marital_status %in% c(" Married-AF-spouse"," Married-civ-spouse"," Married-spouse-absent"), "Married", as.character(marital_status))
+         )
+X$marital_status_group=as.factor(X$marital_status_group)
+
+```
+
 
 **Drop the variables that would not be used for building predictive models.**
 
 ```{r, echo=FALSE}
 
-X=subset(X, select = -c(capital_gain, capital_loss,hours_per_week,native_country))
+X=subset(X, select = -c(capital_gain, capital_loss,hours_per_week,native_country,marital_status))
 cat("The current structure of the dataset is:")
 str(X)
 ```
 
 
 
-
 ## Modeling
 
+### Recode target variable.  
 
-First, for the simplicity in coding, let's recode the values of target variable to be "Y", meaning yearly income is higher than 50K USA, and "N", indicating the income is no more than 50K.  
+
+First, for the simplicity in coding, let's re-code the values of target variable to be "Y", meaning yearly income is higher than 50K USA, and "N", indicating the income is no more than 50K.  
+
 
 ```{r,echo=FALSE}
 
@@ -775,14 +788,297 @@ summary(X$income)
 ```
 
 
-**Create different sets of features to train the models.**
+
+**1.Train-test split.**
+
+Before training supervised learning models, we first split the dataset into training and testing sets.
+
+
+```{r, echo=FALSE,message=FALSE}
+library(caret)
+library(tidyverse)
+
+#train-test split (a 80-20 split)
+#education level & ednum are redundant!!
+#too many levels in the variable lead to overfitting?
+set.seed(123)
+#data split based on the outcome variable - this is actually stratified split!
+X_index=createDataPartition(X$income, p=0.8, list=FALSE)
+X_train=X[X_index,]
+X_test=X[-X_index,]
+
+cat("The number of the two levels of the target variable are:")
+summary(X_train$income)
+#imbalanced dataset - N:Y=18107:6005
+```
+
+
+**2.Down-sample the majority group to balance the training data.**
+
+
+We've seen from Data Exploratory analysis that there are about 3 times of people making no more than 50K annually (the majority group) than those who make over 50K a year (the minority group), so the dataset is imbalanced, which could lead to over-fitting issues. So we decide to down-sample the majority group. More specifically, we will randomly select 34% of the records that have annual income no more than 50K, and then combine them with all the records in the minority group.  
+
+
+* First, randomly select 34% of records from the majority group.  
+
+
+```{r, echo=FALSE,message=FALSE}
+set.seed(123)
+library(dplyr)
+X_train_down=sample_frac(subset(X_train,X_train$income=="N"),0.34,replace = FALSE)
+
+cat("The number of the two levels of the target variable at the randomly selected sample are:")
+summary(X_train_down$income)
+
+```
+
+* Then, combine the randomly down sampled majority group with the original minority group.  
+
+
+```{r,echo=FALSE,message=FALSE}
+
+X_train_bal=rbind(X_train_down,subset(X_train,X_train$income=="Y"))
+
+cat("The number of the two levels of the target variable at the combined balanced sample are:")
+summary(X_train_bal$income)
+#N:Y=6156:6005
+```
+
+
+* Next, randomly shuffle the rows so that not all "N" records are on the top and "Y"s are in the end.  
+
+
+```{r, echo=FALSE, message=FALSE}
+rowind=sample(nrow(X_train_bal))
+X_train_bal=X_train_bal[rowind,]
+
+cat("The number of the two levels of the target variable at the final training dataset are not changed!","\n")
+summary(X_train_bal$income)
+#the ratio of N vs Y is 6156:6005 
+```
 
 
 
 
+### Create different sets of features to train the models.  
 
 
+Based on different ways of dealing with the variables, we have different sets of features to train supervised learning models.  
 
+**1.Training scenario 1: apply Random Forest, KNN and Logistic Regresstion to transformed variables.**  
+
+
+**Random Forest Model.**  
+
+
+We will use 5-fold cross-validation for the re-sampling to tune the model  parameters.
+
+```{r}
+cv_5=trainControl(method = "cv", number = 5, allowParallel = TRUE, summaryFunction = twoClassSummary , classProbs = TRUE)
+```
+
+
+```{r,echo=FALSE,message=FALSE, warning=FALSE}
+
+#random forest
+library(randomForest)
+model_rf <- randomForest(income~age_stand+workclass+fnlwgt_logstand+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours, 
+                         data = X_train_bal,
+                         trControl=cv_5 )
+
+```
+
+
+```{r,echo=FALSE,message=FALSE}
+cat("The fitted random forest model:", "\n")
+model_rf
+cat("Importance of features based on the random forest model:","\n")
+model_rf$importance
+par(mar=c(2,2,2,2))
+plot(model_rf)
+
+#confusion matrix on test data
+conf_rf=confusionMatrix( predict(model_rf, newdata = X_test), 
+                         reference=X_test$income,
+                         positive="Y") 
+cat("The confusion matrix of random forest model on test data:","\n")
+conf_rf
+#accuracy 79.3%%, sens 84%, spec 78%, NIR 75%, Kappa 0.5278  
+library(pROC)
+
+roc.randomForestModel = roc(X_test$income,                          as.vector(ifelse(predict(model_rf, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+
+auc.randomForestModel = auc(roc.randomForestModel)
+
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#plot_rf_ROC is the label
+library(RColorBrewer) # color palettes
+# pick palettes
+mainPalette = brewer.pal(8,"Dark2")
+
+plot.roc(roc.randomForestModel, print.auc = T, auc.polygon = T,col = mainPalette[1] ,print.thres = "best" )
+
+```
+
+
+**KNN Model.**  
+
+```{r }
+#knn
+model_knn=train(income ~ age_stand+workclass+fnlwgt_logstand+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours,
+                data = X_train_bal, trControl=cv_5, method="knn")
+
+cat("The fitted knn model:","\n")
+model_knn
+plot(model_knn)
+```
+
+
+From the above plot of accuracy and number of neighbors, we can see that the accuracy still increases after training on the default number of ks. So we decide to increasing the number of k values to 10 to try to locate a better model.
+
+
+```{r}
+model_knn=train(income ~ age_stand+workclass+fnlwgt_logstand+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours,
+                data = X_train_bal, trControl=cv_5, method="knn", tuneLength = 10)
+plot(model_knn)
+```
+
+Now we can see the accuracy starts to decrease once the number of neighbors reached about 13.
+
+```{r}
+cat("The current fitted KNN models trying more tuning parameters:")
+model_knn
+```
+
+
+```{r, echo=FALSE, message=FALSE,warning=FALSE}
+#confusion matrix on test data
+conf_knn=confusionMatrix( predict(model_knn, newdata = X_test), 
+                         reference=X_test$income,
+                         positive="Y")
+cat("The confusion matrix of knn model on test data:")
+conf_knn
+#accuracy 77%, sens 83%, spec 75%, NIR 75%
+
+#ROC & AUC
+roc.knn = roc(X_test$income,                          as.vector(ifelse(predict(model_knn, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+
+auc.knn = auc(roc.knn)
+
+```
+
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+
+plot.roc(roc.knn, print.auc = T, auc.polygon = T,col = mainPalette[2] ,print.thres = "best" )
+
+```
+
+As there are mixed types of data in our dataset, we are supposed to use the gower distance metric in the KNN method. However, we are not able to specify "gower" in the train() function and the knngow() function which can run knn using the gower metric is not available to our personal version of R, so for future discussion, if time allows, please try to run the KNN method using gower distance metric on this data set.
+
+
+**Logistic Regression Model.**
+
+```{r, echo=FALSE, message=FALSE}
+#logreg
+model_logreg=train(income ~age_stand+workclass+fnlwgt_logstand+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours,
+                   data = X_train_bal, 
+                   metric="ROC",
+                   trControl=cv_5, method="regLogistic")
+
+cat("The fitted logistic regression model:","\n")
+model_logreg
+
+#confusion matrix on test data
+conf_logreg=confusionMatrix( predict(model_logreg, newdata = X_test), 
+                         reference=X_test$income,
+                         positive="Y")
+cat("The confusion matrix of logistic regression model:","\n")
+conf_logreg
+#accuracy 80%, sens 82%, spec 80%, NIR 75%
+
+#ROC & AUC
+roc.logreg = roc(X_test$income,                          as.vector(ifelse(predict(model_logreg, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+
+auc.logreg = auc(roc.logreg)
+```
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+
+plot.roc(roc.logreg, print.auc = T, auc.polygon = T,col = mainPalette[3] ,print.thres = "best" )
+
+```
+
+**Logistic Regression Model on unstandardized age and fnl_wgt.**
+
+```{r, echo=FALSE, message=FALSE}
+#logreg
+model_logreg_ori=train(income ~age+workclass+fnl_wgt+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours,
+                   data = X_train_bal,
+                   metric="ROC",
+                   trControl=cv_5, method="regLogistic")
+
+cat("The fitted logistic regression model:","\n")
+model_logreg_ori
+
+#confusion matrix on test data
+conf_logreg_ori=confusionMatrix( predict(model_logreg_ori, newdata = X_test), 
+                         reference=X_test$income,
+                         positive="Y")
+cat("The confusion matrix of logistic regression model:","\n")
+conf_logreg_ori
+#accuracy 80%, sens 82%, spec 80%, NIR 75%
+
+#ROC & AUC
+roc.logreg_ori = roc(X_test$income,                          as.vector(ifelse(predict(model_logreg_ori, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+
+auc.logreg_ori = auc(roc.logreg_ori)
+```
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+
+plot.roc(roc.logreg_ori, print.auc = T, auc.polygon = T,col = mainPalette[4] ,print.thres = "best" )
+
+```
+
+
+**Logistic Regression Model on unstandardized age without fnl_wgt.**
+
+```{r, echo=FALSE, message=FALSE}
+#logreg
+model_logreg_nofnlwgt=train(income ~age+workclass+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours,
+                   data = X_train_bal, 
+                   trControl=cv_5, 
+                   metric="ROC",
+                   method="regLogistic")
+
+cat("The fitted logistic regression model:","\n")
+model_logreg_nofnlwgt
+
+#confusion matrix on test data
+conf_logreg_nofnlwgt=confusionMatrix( predict(model_logreg_nofnlwgt, newdata = X_test), 
+                         reference=X_test$income,
+                         positive="Y")
+cat("The confusion matrix of logistic regression model:","\n")
+conf_logreg_nofnlwgt
+#accuracy 80%, sens 81.8%, spec 80%, NIR 75%
+
+#ROC & AUC
+roc.logreg_nofnlwgt= roc(X_test$income,                          as.vector(ifelse(predict(model_logreg_nofnlwgt, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+
+auc.logreg_nofnlwgt = auc(roc.logreg_nofnlwgt)
+```
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+
+plot.roc(roc.logreg_nofnlwgt, print.auc = T, auc.polygon = T,col = mainPalette[5] ,print.thres = "best" )
+
+```
+
+The models give similar accuracy level, so for simplicity, we use the logistic model with un-transformed age and with fnl_wgt removed for deploying the shiny App.
 
 
 
