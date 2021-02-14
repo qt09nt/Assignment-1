@@ -21,7 +21,7 @@ true/false output against each demographic item.
 
 
 ## Develop a proposed set of drivers and relationships to inputs
-The output function is the predictiong of income, and whether it belongs to the =< $50K class or to the >$50K class. The input variables are the age, sex, occupation, workclass, education level, education number, relationship, marital status, final weight(refering to the weight of that demographic class within the current population survey), the capital gain, capital loss, hours per week (of work) and the native country.  
+The output function is the prediction of income, and whether it belongs to the =< $50K class or to the >$50K class. The input variables are the age, sex, occupation, workclass, education level, education number, relationship, marital status, final weight(refering to the weight of that demographic class within the current population survey), the capital gain, capital loss, hours per week (of work) and the native country.  
 - How does age affect the income class of a customer?
 - How does education level affect the income class of a customer?
 - What types of occupation is associated with income greater than $50K or with income less than or equal to $50K?
