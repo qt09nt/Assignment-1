@@ -13,6 +13,8 @@ library(shiny)
 
 server = function(input, output){
     
+    logmodel<-readRDS("logmodel.rds")
+    
     user_input<-reactive({
         
         region<-input$userregion
