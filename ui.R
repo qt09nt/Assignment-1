@@ -13,6 +13,23 @@ library(shinyWidgets)
 
 
 
+
+
+job_type<-readRDS("job_type.rds")
+country_region<-readRDS("country_region.rds")
+sex_gender<-readRDS("sex_gender.rds")
+family_relationship<-readRDS("family_relationship.rds")
+marital_status<-readRDS("marital_status.rds")
+socio_race<-readRDS("socio_race.rds")
+prof_education<-readRDS("prof_education.rds")
+prof_occupation<-readRDS("prof_occupation.rds")
+prof_workclass<-readRDS("prof_workclass.rds")
+prof_hours<-readRDS("prof_hours.rds")
+prof_capgain<-readRDS("prof_capgain.rds")
+prof_caploss<-readRDS("prof_caploss.rds")
+
+
+
 ui  = navbarPage(theme=shinytheme("united"),
                           title = 'Income Classifier',
                           
@@ -160,6 +177,7 @@ ui  = navbarPage(theme=shinytheme("united"),
                                    
                           ) # fluidRow 
                           
+                 
                           
                           
 )
