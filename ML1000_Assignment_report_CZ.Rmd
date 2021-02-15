@@ -6,9 +6,39 @@ output:
   pdf_document: default
   html_document: default
 ---
-# Business and Data Understanding 
-The data we are using comes from the US Census data collected in 1994. The dataset can be obtained at the UCI Machine Learning Repository (https://archive.ics.uci.edu/ml/datasets/census+income). The donor of the dataset is Ronny Kohavi and Barry Becker, Data Mining and Visualization, Silicon Graphics. The current dataset
-was extracted by Barry Becker from the 1994 Census database. 
+## Abstract
+
+Income Classifier is an application developed for ABC Handbags LLC to classify target population for a marketing campaign. The demographic information of the population is obtained from Adult dataset. The application is build using R and shinyapp following a CRISP-DM framework.
+
+
+## Background
+
+Our client ABC Handbags LLC is looking to open a new retail location exclusively for luxury handbags at XYZ square in New York City. To market the store's handbags, the client wants to target customers with an annual income above 50K in New York City. The dataset of people living in New York City available to us has incomplete income data. To identify customers with income above 50K, the client wants us to predict the income data for customers using the available data points.
+
+
+## Analytical Objective
+
+The objective of the project is to develop a supervised learning model and evaluate the effectiveness in predicting income above 50K USD. The model will classify income above/below 50K output against each input demographic item.Supervised learning model will be fitted for algorithms like Logistic Regression, Random Forest  and KNN. The most accurate and precise model will chosen for deployment.
+
+
+
+## Assumptions and Success Criteria
+1. Marketing team has sufficient demographic information on the population that the model needs to work with reasonable accuracy. 
+2. The dataset is an accurate representation of the current demographic to be used as a train dataset.
+3. Attributes like age, work hours,job type, education are more significant than other attributes in the dataset
+4. Achieving a classification accuracy above 80% and precision of 60% is ideal.
+
+
+
+## Ethics & Privacy
+
+The attributes used in the application has no significant sensitivity. If any sensitivity outcomes occur from usage of the application may be contextual. Personally Identifiable Information is not collected nor is it an output of the application. Some of the attributes are anonymized to a single level. The hosting environment has implemented security best practices. The data and application logic is not exposed in the application front. Authentication is not currently set for the deployed application.
+
+
+## Data Understanding 
+
+The data comes from UCI Machine Learning repository for [Adult Dataset](https://archive.ics.uci.edu/ml/datasets/census+income). The owner of the dataset is Ronny Kohavi and Barry Becker.The dataset is based on 1994 U.S Census dataset. The dataset has 16 attributes and 32561 records.An individual's annual income is dependent on various factors. Some of these factors include individual's education level, age, gender, occupation, and etc. Adult dataset is an ideal representation for our income prediction model. The target variable has two classes, values '>50K' and '<=50K', meaning it is a binary classification task.
+
 
 ## Reformulate a problem statement as an analytics problem
 Our client is looking to open a business in a new location. The client is looking to open a store that sells products of one of their
@@ -24,19 +54,25 @@ The output function is the prediction of income, and whether it belongs to the =
 - How does education level affect the income class of a customer?
 - What types of occupation is associated with income greater than $50K or with income less than or equal to $50K?
 
-## Assumptions and Success Criteria
+## State the set of assumptions related to the problem 
 One assumption related to this problem is that the relationships between the input variables (such as age, occupation, workclass, marital status) to the target variable income obtained through the 1994 census data will hold true to what is observed today in 2021. 
-1. Marketing team has sufficient demographic information on the population that the model needs to work with reasonable accuracy. 
-2. The dataset is an accurate representation of the current demographic to be used as a train dataset.
-3. Attributes like age, work hours,job type, education are more significant than other attributes in the dataset
-4. Achieving a classification accuracy above 80% and precision of 60% is ideal.
+
+## Define key metrics of success 
+One key metric of success is that the prediction model can accurately predict the income class, given the input information.  
 
 ## Describe how you have applied the ethical ML framework
 One of the considerations of the Machine Learning Ethics framework is how machine learning models have the potential to propagate biases through feedback loops. Our model aims to predict the income category for customers based on certain demographic information collected in the 1994 US census, and does have some potential to negatively impact individuals. For example, if the model predicts people of certain work class, race, gender, age or native country has a greater probability to have income less than $50 thousand, this information may perpetuate historic biases against people of that demographic. Based on the income predictions produced by this tool, companies may treat different groups of people differently, in terms of marketing resources targeted towards different groups of people. 
-In terms of privacy, all the data in the census dataset is anonymous and location data is not available, which helps prevent identification of any individual who contributed to the census dataset. The Income Prediction Shiny App tool does not collect any personal information of any individual so privacy is the default. It also does not track users who use the tool so privacy is embedded by design. User inputs to the Income Prediction tool is not retained. 
+In terms of privacy, all the data in the census dataset is anonymous and location data is not available, which helps prevent identification of any individual who contributed to the census dataset. The Income Prediction Shiny App tool does not collect any personal information of any individual so privacy is the default. It also does not track users who use the tool so privacy is embedded by design. User inputs to the Income Prediction tool is not retained.  
+
 
 ## Identify and prioritize means of data acquisition
 The means of data acquisition is through downloading the US census adult data set.
+
+
+## Define and prepare your target variables. Use proper variable representations (int, float, one-hot, etc.).
+
+The target variable is income. 
+
 
 # **Modeling and Evaluation**
  
@@ -190,6 +226,7 @@ aggr_plot = aggr(X, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels
 
 ```
 
+Note: we didn't find a way to remove the warning message and accommodate the entire plot in the page due to the limitation of time. 
 
   
 From the above, there are missing values in this data set and all the missing values are from categorical variables.  
@@ -969,7 +1006,7 @@ K-nearest neighbors (KNN) algorithm is one of the supervised learning algorithms
 #knn
 set.seed(123)
 t1_knn=proc.time()
-model_knn=train(income ~ age_stand+workclass+fnlwgt_logstand+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours,
+model_knn=train(income ~ age_stand + workclass + fnlwgt_logstand +             education + marital_status_group + occupation + relationship +              race + sex + native_region + cap_loss + cap_gain + weekly_hours,
                 data = X_train_bal,
                  metric="ROC",
                 trControl=cv_5, method="knn")
@@ -988,13 +1025,16 @@ From the above plot of accuracy and number of neighbors, we can see that the acc
 ```{r,warning=FALSE,message=FALSE,tidy=TRUE}
 set.seed(123)
 t1_knn=proc.time()
-model_knn=train(income ~ age_stand+workclass+fnlwgt_logstand+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours,
+model_knn=train(income ~ age_stand + workclass + fnlwgt_logstand +             education + marital_status_group + occupation + relationship +              race + sex + native_region + cap_loss + cap_gain + weekly_hours,
                 data = X_train_bal, 
                 metric="ROC",
                 trControl=cv_5, 
                 method="knn", 
                 tuneLength = 15)
 t2_knn=proc.time()
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
 cat("The computational time of training a knn model is",(t2_knn-t1_knn)[3],"s.","\n")
 
 plot(model_knn)
@@ -1040,16 +1080,19 @@ As there are mixed types of data in our dataset, we are supposed to use the gowe
 #logreg
 set.seed(123)
 t1_log=proc.time()
-model_logreg=train(income ~age_stand+workclass+fnlwgt_logstand+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours,
+model_logreg=train(income ~age_stand + workclass + fnlwgt_logstand +             education + marital_status_group + occupation + relationship +              race + sex + native_region + cap_loss + cap_gain + weekly_hours,
                    data = X_train_bal, 
                    metric="ROC",
                    trControl=cv_5, method="regLogistic")
 
 t2_log=proc.time()
+```
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
 cat("The computational time of training a logistic regression on transformed variables is",(t2_log-t1_log)[3],"s.","\n")
 
-#cat("The fitted logistic regression model:","\n")
-#model_logreg
+cat("The fitted logistic regression model:","\n")
+model_logreg
 
 #confusion matrix on test data
 conf_logreg=confusionMatrix( predict(model_logreg, newdata = X_test), 
@@ -1077,13 +1120,17 @@ plot.roc(roc.logreg, print.auc = T, auc.polygon = T,col = mainPalette[3] ,print.
 #logreg
 set.seed(123)
 t1_log_2=proc.time()
-model_logreg_ori=train(income ~age+workclass+fnl_wgt+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours,
+model_logreg_ori=train(income ~ age + workclass + fnl_wgt + education + marital_status_group + occupation + relationship + race + sex + native_region + cap_loss + cap_gain + weekly_hours,
                    data = X_train_bal,
                    metric="ROC",
                    trControl=cv_5, 
                    method="regLogistic")
 t2_log_2=proc.time()
-cat("The computational time of training a logistic regression model using unstandardized variables is",(t2_log_2-t1_log_2)[3],"s.","\n")
+```
+
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+cat("The time of training a logistic regression model using unstandardized variables is",(t2_log_2-t1_log_2)[3],"s.","\n")
 
 
 #cat("The fitted logistic regression model:","\n")
@@ -1098,7 +1145,7 @@ conf_logreg_ori
 #accuracy 80%, sens 82%, spec 80%, NIR 75%
 
 #ROC & AUC
-roc.logreg_ori = roc(X_test$income,                          as.vector(ifelse(predict(model_logreg_ori, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+roc.logreg_ori = roc(X_test$income,as.vector(ifelse(predict(model_logreg_ori, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
 
 auc.logreg_ori = auc(roc.logreg_ori)
 
@@ -1120,12 +1167,15 @@ of the Shiny app
 #logreg
 set.seed(123)
 t1_log_3=proc.time()
-model_logreg_nofnlwgt=train(income ~age+workclass+education+marital_status_group+occupation+relationship+race+sex+native_region+cap_loss+cap_gain+weekly_hours,
+model_logreg_nofnlwgt=train(income ~ age + workclass + education + marital_status_group + occupation + relationship + race + sex + native_region + cap_loss + cap_gain + weekly_hours,
                    data = X_train_bal, 
                    trControl=cv_5, 
                    metric="ROC",
                    method="regLogistic")
 t2_log_3=proc.time()
+```
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
 cat("The computational time of training a logistic regression model is",(t2_log_3-t1_log_3)[3],"s.","\n")
 
 
@@ -1142,7 +1192,7 @@ conf_logreg_nofnlwgt
 #accuracy 80%, sens 82%, spec 80%, NIR 75%
 
 #ROC & AUC
-roc.logreg_nofnlwgt= roc(X_test$income,                          as.vector(ifelse(predict(model_logreg_nofnlwgt, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+roc.logreg_nofnlwgt= roc(X_test$income, as.vector(ifelse(predict(model_logreg_nofnlwgt, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
 
 auc.logreg_nofnlwgt = auc(roc.logreg_nofnlwgt)
 ```
@@ -1202,7 +1252,7 @@ round(prop.table(table(select(train, income), exclude = NULL)), 4) * 100
 
 Train the model
 ```{r, echo= FALSE,warning=FALSE,message=FALSE}
-model_glm <- glm(income ~age_stand+workclass+education+marital_status_group+occupation+relationship+race+sex+cap_gain+cap_loss+weekly_hours+native_region, data=train, family=binomial(link='logit'))   
+model_glm <- glm(income ~ age_stand + workclass + education + marital_status_group + occupation + relationship + race + sex + cap_gain + cap_loss + weekly_hours + native_region, data=train, family=binomial(link='logit'))   
 summary(model_glm)
 ```
 
@@ -1317,15 +1367,15 @@ According to the results of the varImp function, age, education - Bachelors, edu
 
 The underlying code for this markdown can be found on github [Assignment 1](https://github.com/ML1000-GroupB/Assignment-1) 
 The prediction model is deployed in ShinyApp.The application accepts inputs from user and classify income as above or below 50K.The url for   
-[Income Classifier](https://mlgroupb.shinyapps.io/incomeclassifier/)
+[Income Classifier](https://mlgroupb.shinyapps.io/incomeclassifier/)  
 
 
-#Conclusion and Discussion.
+# Conclusion and Discussion.
 
-For the census adult income data set, since the model was built on the data collected in 1994, some values could be outdated and it's likely that the model does not predict well nowadays. If other potential predictors could be collected, such as the city people reside in, the number of people in the household, the age group of children in the household, the highest education their parents received, the model could be further improved.
+For the census adult income data set, since the model was built on the data collected in 1994, some values could be outdated and it's likely that the model doesn't not predict well nowadays. If other potential predictors could be collected, such as the city people reside in, the number of people in the household, the age group of children in the household, the highest education their parents received, the model could be further improved.
 
 
-There are missing value and outliers in this imbalanced dataset, we removed missing values for the sake of limited time and used different ways to clean the data. We tried different supervised learning algorithms on different sets of features. 
+There are missing value and outliers in this imbalanced dataset, we removed missing values for the sake of limited time and used different ways to clean the data. We tried differnt supervised learning algorithms on different sets of features. 
 
 
 We then use accuracy and AUC to evaluate the models. For our training and testing sets, the different algorithms give relatively close results. More specifically, the random forest model gives a 80% overall accuracy, 81% balanced accuracy, and AUC 0.81; KNN with the default Euclidean distance metric gives an accuracy of 77%, balanced accuracy of 80% and AUC 0.79. The accuracy of logistic regression on transformed variables is 80% and the balanced accuracy is 81%, with AUC 0.81. When we removed the final weight variable and/or train models using the original age values, the accuracy of the models almost did not change at all, but the computational speed becomes much slower.
@@ -1334,7 +1384,7 @@ We chose the logistic regression model trained on the original age values for de
 
 
 
-#Bibliography
+# Bibliography
 
 https://www.youtube.com/watch?v=mf1A_8K84rw&ab_channel=DavidDalpiaz  
  
@@ -1352,7 +1402,4 @@ RPubs by Rstudio, https://rpubs.com/Cher/403319
   
   
 Hadley Wickham & Garret Grolemund , R for Data Science, O’Reilly in January 2017
-
-
-
 
