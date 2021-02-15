@@ -24,11 +24,12 @@ The output function is the prediction of income, and whether it belongs to the =
 - How does education level affect the income class of a customer?
 - What types of occupation is associated with income greater than $50K or with income less than or equal to $50K?
 
-## State the set of assumptions related to the problem 
+## Assumptions and Success Criteria
 One assumption related to this problem is that the relationships between the input variables (such as age, occupation, workclass, marital status) to the target variable income obtained through the 1994 census data will hold true to what is observed today in 2021. 
-
-## Define key metrics of success 
-One key metric of success is that the prediction model can accurately predict the income class, given the input information.  
+1. Marketing team has sufficient demographic information on the population that the model needs to work with reasonable accuracy. 
+2. The dataset is an accurate representation of the current demographic to be used as a train dataset.
+3. Attributes like age, work hours,job type, education are more significant than other attributes in the dataset
+4. Achieving a classification accuracy above 80% and precision of 60% is ideal.
 
 ## Describe how you have applied the ethical ML framework
 One of the considerations of the Machine Learning Ethics framework is how machine learning models have the potential to propagate biases through feedback loops. Our model aims to predict the income category for customers based on certain demographic information collected in the 1994 US census, and does have some potential to negatively impact individuals. For example, if the model predicts people of certain work class, race, gender, age or native country has a greater probability to have income less than $50 thousand, this information may perpetuate historic biases against people of that demographic. Based on the income predictions produced by this tool, companies may treat different groups of people differently, in terms of marketing resources targeted towards different groups of people. 
@@ -1311,6 +1312,12 @@ To examine the absolute value of the t-statistic for each predictor:
 varImp(model_glm) 
 ```
 According to the results of the varImp function, age, education - Bachelors, education - Doctorate, education - Masters, education- Prof - school, occupation Exec-managerial, occupation Prof-specialty, occupation Tech-support, relationship Not-in-family, relationship Own-child, capital loss of zero, hours per week (45 - 50, 50 -60, and less than 40) are the most important predictors for income status. 
+
+## Deployment
+
+The underlying code for this markdown can be found on github [Assignment 1](https://github.com/ML1000-GroupB/Assignment-1) 
+The prediction model is deployed in ShinyApp.The application accepts inputs from user and classify income as above or below 50K.The url for   
+[Income Classifier](https://mlgroupb.shinyapps.io/incomeclassifier/)
 
 
 #Conclusion and Discussion.
