@@ -44,6 +44,7 @@ The data comes from UCI Machine Learning repository for [Adult Dataset](https://
 
 ## Deployment
 
+The underlying code for this markdown can be found on github [Assignment 1](https://github.com/ML1000-GroupB/Assignment-1) 
 The prediction model is deployed in ShinyApp.The application accepts inputs from user and classify income as above or below 50K.The url for   
 [Income Classifier](https://mlgroupb.shinyapps.io/incomeclassifier/)
 
