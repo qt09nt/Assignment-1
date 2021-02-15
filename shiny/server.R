@@ -9,7 +9,7 @@
 
 library(shiny)
 
-# Define server logic required to draw a histogram
+
 
 server = function(input, output){
     
@@ -25,10 +25,11 @@ server = function(input, output){
         occupation<-input$useremployment
         workclass<-input$useremploymenttype
         gain<-input$usercapgain
+        loss<-input$usercaploss
         weekly_hours<-input$userweeklyhours
         
         
-        user_input<-cbind(region,race,age,sex,relationship,status,education,occupation,workclass,gain,weekly_hours)
+        user_input<-cbind(region,race,age,sex,relationship,status,education,occupation,workclass,gain,loss,weekly_hours)
         user_input<-as.data.frame(user_input)
         user_input$income<-""
         user_input$age<-as.numeric(user_input$age)
@@ -41,7 +42,7 @@ server = function(input, output){
     
     test<-eventReactive(input$calc,
                         {
-                            prob<-predict(logmodel2,user_input(),type='response')
+                            prob<-predict(logmodel,user_input(),type='response')
                             if (prob >0.5)
                                 print("Based on your inputs, income is predicted above 50K USD")
                             else
