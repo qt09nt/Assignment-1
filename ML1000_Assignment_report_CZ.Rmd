@@ -34,20 +34,8 @@ One key metric of success is that the prediction model can accurately predict th
 One of the considerations of the Machine Learning Ethics framework is how machine learning models have the potential to propagate biases through feedback loops. Our model aims to predict the income category for customers based on certain demographic information collected in the 1994 US census, and does have some potential to negatively impact individuals. For example, if the model predicts people of certain work class, race, gender, age or native country has a greater probability to have income less than $50 thousand, this information may perpetuate historic biases against people of that demographic. Based on the income predictions produced by this tool, companies may treat different groups of people differently, in terms of marketing resources targeted towards different groups of people. 
 In terms of privacy, all the data in the census dataset is anonymous and location data is not available, which helps prevent identification of any individual who contributed to the census dataset. The Income Prediction Shiny App tool does not collect any personal information of any individual so privacy is the default. It also does not track users who use the tool so privacy is embedded by design. User inputs to the Income Prediction tool is not retained. 
 
-
 ## Identify and prioritize means of data acquisition
 The means of data acquisition is through downloading the US census adult data set.
-
-
-## Describe how you would define and measure the outcomes from the dataset.
-
-##How would you measure the effectiveness of a good prediction algorithm or clustering algorithm? 
-
-
-## Define and prepare your target variables. Use proper variable representations (int, float, one-hot, etc.).
-
-The target variable is income. 
-
 
 # **Modeling and Evaluation**
  
