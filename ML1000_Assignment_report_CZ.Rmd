@@ -1315,10 +1315,10 @@ According to the results of the varImp function, age, education - Bachelors, edu
 
 #Conclusion and Discussion.
 
-For the census adult income data set, since the model was built on the data collected in 1994, some values could be outdated and it's likely that the model doesn't not predict well nowadays. If other potential predictors could be collected, such as the city people reside in, the number of people in the household, the age group of children in the household, the highest education their parents received, the model could be further improved.
+For the census adult income data set, since the model was built on the data collected in 1994, some values could be outdated and it's likely that the model does not predict well nowadays. If other potential predictors could be collected, such as the city people reside in, the number of people in the household, the age group of children in the household, the highest education their parents received, the model could be further improved.
 
 
-There are missing value and outliers in this imbalanced dataset, we removed missing values for the sake of limited time and used different ways to clean the data. We tried differnt supervised learning algorithms on different sets of features. 
+There are missing value and outliers in this imbalanced dataset, we removed missing values for the sake of limited time and used different ways to clean the data. We tried different supervised learning algorithms on different sets of features. 
 
 
 We then use accuracy and AUC to evaluate the models. For our training and testing sets, the different algorithms give relatively close results. More specifically, the random forest model gives a 80% overall accuracy, 81% balanced accuracy, and AUC 0.81; KNN with the default Euclidean distance metric gives an accuracy of 77%, balanced accuracy of 80% and AUC 0.79. The accuracy of logistic regression on transformed variables is 80% and the balanced accuracy is 81%, with AUC 0.81. When we removed the final weight variable and/or train models using the original age values, the accuracy of the models almost did not change at all, but the computational speed becomes much slower.
