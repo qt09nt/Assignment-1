@@ -1372,7 +1372,7 @@ The prediction model is deployed in ShinyApp.The application accepts inputs from
 
 # Conclusion and Discussion.
 
-For the census adult income data set, since the model was built on the data collected in 1994, some values could be outdated and it's likely that the model doesn't not predict well nowadays. If other potential predictors could be collected, such as the city people reside in, the number of people in the household, the age group of children in the household, the highest education their parents received, the model could be further improved.
+For the census adult income data set, since the model was built on the data collected in 1994, some values could be outdated and it's likely that the model doesn't  predict well nowadays. If other potential predictors could be collected, such as the city people reside in, the number of people in the household, the age group of children in the household, the highest education their parents received, the model could be further improved.
 
 
 There are missing value and outliers in this imbalanced dataset, we removed missing values for the sake of limited time and used different ways to clean the data. We tried differnt supervised learning algorithms on different sets of features. 
