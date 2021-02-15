@@ -11,9 +11,9 @@ library(shiny)
 library(shinythemes)
 library(shinyWidgets)
 
-# Define UI for application that draws a histogram
 
-shinyApp(ui  = navbarPage(theme=shinytheme("united"),
+
+ui  = navbarPage(theme=shinytheme("united"),
                           title = 'Income Classifier',
                           
                           tabPanel("Classify",icon=icon("network-wired"),
@@ -162,4 +162,4 @@ shinyApp(ui  = navbarPage(theme=shinytheme("united"),
                           
                           
                           
-))
+)
