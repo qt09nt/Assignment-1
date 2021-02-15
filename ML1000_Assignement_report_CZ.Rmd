@@ -42,10 +42,6 @@ One key metric of success is that the prediction model can accurately predict th
 The means of data acquisition is through downloading the US census adult data set.
 
 
-# Data Preparation 
-
-## Describe the purpose of the data set you selected (i.e., why was this data collected in the first place?).
-
 ## Describe how you would define and measure the outcomes from the dataset.
 
 ##How would you measure the effectiveness of a good prediction algorithm or clustering algorithm? 
