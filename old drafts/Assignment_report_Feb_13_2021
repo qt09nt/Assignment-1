@@ -1,0 +1,455 @@
+---
+title: '**Income Prediction. Classification Predictive Modeling**'
+author: "by Anupama r.k, Queenie Tsang, Crystal (Yunan) Zhu"
+date: "12/02/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Business and Data Understanding 
+The data we are using comes from the US Census data collected in 1994. The dataset can be obtained at the UCI Machine Learning Repository (https://archive.ics.uci.edu/ml/datasets/census+income). The donor of the dataset is Ronny Kohavi and Barry Becker, Data Mining and Visualization, Silicon Graphics. The current dataset
+was extracted by Barry Becker from the 1994 Census database. 
+
+## Reformulate a problem statement as an analytics problem
+Our client is looking to open a business in a new location. The client is looking to open a store that sells products of one of their
+luxury brands. The luxury brand is trying to target people with income of above 50K. 
+The current business problem we are trying to solve is how to predict the income of a given customer into 2 classes: less than or equal to $50 thousand USD, or greater than $50 thousand USD. This is a business problem, because given some demographic information such as age, sex, education, marital status, occupation, we want to be able to predict the customer's income into the =<50K category or >50K category. 
+
+If we can predict this income accurately, the company can use this information to determine whether they should allocate resources to market some premium grade products to the customer. The marketing team can use this tool to find the audience for our marketing pitch in anticipation of the branch opening and improve targeted advertising to people who have income above 50K. The tool allows a
+true/false output against each demographic item.
+
+## Develop a proposed set of drivers and relationships to inputs
+The output function is the predictiong of income, and whether it belongs to the =< $50K class or to the >$50K class. The input variables are the age, sex, occupation, workclass, education level, education number, relationship, marital status, final weight(refering to the weight of that demographic class within the current population survey), the capital gain, capital loss, hours per week (of work) and the native country.  
+- How does age affect the income class of a customer?
+- How does education level affect the income class of a customer?
+- What types of occupation is associated with income greater than $50K or with income less than or equal to $50K?
+
+## State the set of assumptions related to the problem 
+One assumption related to this problem is that the relationships between the input variables (such as age, occupation, workclass, marital status) to the target variable income obtained through the 1994 census data will hold true to what is observed today in 2021. 
+
+## Define key metrics of success 
+One key metric of success is that the prediction model can accurately predict the income class, given the input information.  
+
+## Describe how you have applied the ethical ML framework
+
+
+
+
+
+## Identify and prioritize means of data acquisition
+The means of data acquisition is through downloading the US census adult data set.
+
+
+# Data Preparation 
+
+## Describe the purpose of the data set you selected (i.e., why was this data collected in the first place?).
+
+## Describe how you would define and measure the outcomes from the dataset.
+
+##How would you measure the effectiveness of a good prediction algorithm or clustering algorithm? 
+
+
+## Define and prepare your target variables. Use proper variable representations (int, float, one-hot, etc.).
+
+The target variable is income. 
+
+## Use pre-processing methods (as needed) for dimensionality reduction, scaling, etc. Remove variables that are not needed/useful for the analysis 
+
+## Describe the final dataset that is used for classification (include a description of any newly formed variables you created).
+
+
+# **Modeling and Evaluation**
+  
+## **Describe the data**
+
+
+
+### Data Dictionary
+
+```{r, echo=FALSE, message=FALSE}
+library(ggplot2)
+library(VIM)
+X=read.csv("adultdata.csv", stringsAsFactors = TRUE)
+#str(X)
+#summary
+colnames(X) =c("age", "workclass", "fnl_wgt", "education", "education_num", "marital_status", "occupation", "relationship", "race", "sex", "capital_gain", "capital_loss", "hours_per_week", "native_country", "income")
+#str(X)
+cat("The dimension of the dataset is",dim(X)[1],"by",dim(X)[2],".")
+```
+
+There are 32,561 records and 15 columns in the original data set.
+
+```{r,echo=FALSE}
+datatype=sapply(X,class)
+#datatype
+#6 numeric variables
+#9 categorical variables
+```
+
+There are 6 numeric and 9 categorical variables shown as follows:
+
+Column Name        | Data Type   | Column Description  
+-------------------|-------------| ------------------- 
+age                |Integer      |The age of the adult (e.g., 39, 50, 38, etc.)  
+workclass          |Factor       |The work class of the adult (e.g., Private, Self-emp-not-inc, Federal-gov, etc.)   
+fnl_wgt            |Integer      |The weights on the Current Population Survey (CPS) files are controlled to independent estimates of the civilian noninstitutional population of the US (e.g., 77516, 83311, etc.)
+education          |Factor       |The education of the adult (e.g., Bachelors, Some-college, 10th, etc.)
+education_num      |Integer      |The number years of the adult's education (e.g., 13, 9, 7, etc.)
+marital_status     |Factor       |The marital status of the adult (e.g., Divorced, Never-married, Separated, etc.)  
+occupation         |Factor       |The occupation of the adult (e.g., Tech-support, Craft-repair, Sales, etc. ) 
+relationship       |Factor       |The relationship of the adult in a family (e.g., Wife, Own-child, Husband, etc.  )
+race               |Factor       |The race of the adult (e.g., White, Asian-Pac-Islander, Amer-Indian-Eskimo, etc.)
+sex                |Factor       |The gender of the adult.(Female, Male )
+capital_gain       |Integer      |The capital gain of the adult (e.g., 0, 2174, 14084, etc.)
+capital_loss       |Integer      |The capital loss of the adult (e.g., 0, 1408,2042, etc.)
+hours_per_week     |Integer      |The number of working hours each week for the adult (e.g. 40, 13, 16, etc.)
+native_country     |Factor       |The native country of the adult (e.g. Cambodia, Canada, Mexico, etc.)
+income             |Factor       |The yearly income of the adult at 2 levels: <=50K and >50K.
+
+### Data Description
+
+looking at some statistics for the dataset
+```{r}
+summary(X)
+```
+#### First, let's check whether there are duplicates in the dataset.
+
+```{r, echo=FALSE,message=FALSE}
+library(tidyverse)
+#library(hutils)
+#Remove duplicated rows based on all columns
+# - if two rows are exactly the same, keep only one of them
+X_nodup=distinct(X,X[,1:15], keep_all=TRUE)[,-16]
+#identify duplicated rows
+X_dup=X[duplicated(X),]
+cat("The number of duplicated records in the dataset is",dim(X_dup)[1],".")
+#dim(X_dup)
+#use X_nodup for all later analysis
+#unique(X_dup$fnl_wgt)
+cat("Let's look at several examples of the duplicated records:")
+X_dup_sample=subset(X,fnl_wgt==308144 | fnl_wgt== 250051)
+X_dup_sample=X_dup_sample[order(X_dup_sample$fnl_wgt),]
+X=X_nodup
+```
+
+Let's look at a sample of duplicated records:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+library(xtable)
+options(xtable.floating = FALSE)
+options(xtable.timestamp = "")
+options(xtable.comment = FALSE)
+#library(dplyr)
+#library(DT)
+#library(knitr)
+#print(xtable(X_dup_sample[,1:8]), include.rownames=FALSE)
+print(xtable(X_dup_sample[,1:8]))
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+#print(xtable(X_dup_sample[,9:15],caption = "Adult Income Data Sample", caption.placement = "top"))
+print(xtable(X_dup_sample[,9:15]))  
+```
+  
+The 24 duplicated rows will be removed from all later analysis.
+  
+#### Then let's check whether there are any missing values in the dataset.
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+#check missing values of each column
+m=c()
+for (i in 1:ncol(X))  {
+  m[i]=sum(grepl("?",X[,i],fixed = TRUE))
+}
+missval=paste0(colnames(X),rep("-",15),m,rep(" missing values",))
+#cat("The number of missing values for each variable are:")
+#missval
+
+#Recode missing values to be more standard - replace ? with NA
+#ifelse will coerce the factor values into integers, thus use as.character to main the original factor values
+X$workclass=ifelse(X$workclass==" ?",NA,as.character(X$workclass))
+X$occupation=ifelse(X$occupation==" ?",NA,as.character(X$occupation))
+X$native_country=ifelse(X$native_country==" ?",NA,as.character(X$native_country))
+
+#then transform the characters back to factors
+X$workclass=as.factor(X$workclass)
+X$occupation=as.factor(X$occupation)
+X$native_country=as.factor(X$native_country)
+#str(X)
+
+#display the proportion of missing values
+pMiss = function(x){sum(is.na(x))/length(x)*100}
+#cat("The percentages of missing values for each variable are:")
+#apply(X,2,pMiss)
+
+datatype=sapply(X,class)
+
+#Visualize missing data
+#install.packages("VIM") #large package install before class
+#break dataset into 2 pieces if you have low memory computer...
+```
+
+```{r , echo=FALSE}
+library(VIM)
+aggr_plot = aggr(X, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels=names(X), cex.axis=.7, gap=3, ylab=c("Histogram of missing data","Pattern"))
+```
+
+From the above, there are missing values in the data and all the missing values are from categorical variables. Thus we decide to remove the records with missing values.  
+  
+### Comparing records with at least one missing value to those without any missing values.  
+
+
+In order to better understand the patterns of the missing values, let's look at some descriptions of the records with missing values.
+
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+library(gridExtra)
+X_wmiss=subset(X,is.na(workclass) | is.na(occupation) | is.na(native_country))
+X_nomiss=setdiff(X,X_wmiss)
+X$missind=ifelse(is.na(X$workclass) | is.na(X$occupation) | is.na(X$native_country),"Y","N")
+#flip the coordinates/make horizontal barplots due to large number of levels in categorical variables
+library(ggplot2)
+p1 = ggplot(X, aes(age, fill = missind)) + geom_bar() + coord_flip()
+p2 = ggplot(X, aes(education, fill = missind)) + geom_bar() + coord_flip()
+p3 = ggplot(X, aes(marital_status, fill = missind)) + geom_bar() + coord_flip()
+p4 = ggplot(X, aes(relationship, fill = missind)) + geom_bar() + coord_flip()
+p5 = ggplot(X, aes(race, fill = missind)) + geom_bar() + coord_flip()
+p6 = ggplot(X, aes(sex, fill = missind)) + geom_bar() + coord_flip()
+p7 = ggplot(X, aes(hours_per_week, fill = missind)) + geom_bar() + coord_flip()
+p8 = ggplot(X, aes(income, fill = missind)) + geom_bar() + coord_flip()
+p1
+p2
+p3
+p4
+p5
+p6
+p7
+p8
+```
+
+
+From the above bar charts comparing the distributions of 7 variables of the group that do not have missing values and the group that have at least one missing records, we can see that the missing records are generally evenly  distributed across all ages, education level, marital status, family relationship, race, working hours per week and the target variable income. When compared with the whole population in the census, the percentages of records with missing values are having slightly lower percentages in the age group between 20-50, Married civ spouse marital status, husband, and slightly higher percentages for 60-70 years old, never-married. Males tend to have fewer missing records than females. 
+
+Since the proportion of missing values is relatively small (7%) where we would have 30K records left, and it's generally the same for people with income higher and lower than 50K USD, we think it would be reasonable to remove the records for our analysis in this report. If we had more time, we'd recommend fitting models separately for female and male since they have different willingness to answer occupation, work class or native country related questions, which could be strong predictors for adult income.  
+  
+  
+Now let's view the summary of the 6 numeric columns:  
+
+        
+```{r echo=FALSE, message=FALSE, paged.print=FALSE, results='asis'}
+X=X[,-16]
+sum_num=matrix(,15,6)
+for (i in 1:ncol(X)) {
+  
+  if (class(X[,i])=="integer") {
+    
+    sum_num[i,]=summary(X[,i])[1:6]
+  } 
+  
+}
+sum_num=sum_num[complete.cases(sum_num),]
+colnames(sum_num)=names(summary(X$age))
+rownames(sum_num)=colnames(X)[datatype=="integer"]
+print(xtable(sum_num))  
+  
+```
+  
+  
+Let's take a clearer look at the numeric values by visualizing their distributions using histograms, except for capital gain and capital loss.
+
+
+```{r, echo=FALSE,message=FALSE}  
+p1 =   ggplot(data=X)+ geom_histogram(mapping=aes(x=age),binwidth = 0.5,color="darkblue", fill="lightblue")
+p2 =   ggplot(data=X)+ geom_histogram(mapping=aes(x=fnl_wgt),binwidth = 50,color="darkblue", fill="lightblue")
+  
+p3 =    ggplot(data=X)+ geom_histogram(mapping=aes(education_num),binwidth = 1,color="darkblue", fill="lightblue")
+      
+p4 =    ggplot(data=X)+ geom_histogram(mapping=aes(hours_per_week),binwidth = 1,color="darkblue", fill="lightblue")
+        
+library(gridExtra)
+grid.arrange(p1,p2,p3,p4,nrow=2,ncol=2)
+```
+
+
+Let's use boxplots to see whether there are outliers for each numeric variable.
+
+```{r, echo=FALSE}
+par(mar = c(2,2,2,2))
+par(mfrow=c(2,3))
+for (i in 1:ncol(X)){
+  
+  if (class(X[,i])=="integer") {
+    boxplot(X[,i], main=colnames(X)[i])
+  }
+}
+```
+
+
+Since there are large number of zeros in capitalgain & capitalloss variables, let's check if there are outliers for non-zero values
+
+
+```{r, echo=FALSE, message=FALSE}
+par(mar = c(1,1,1,1))
+par(mfrow=c(1,2))
+boxplot(X$capital_gain[which(X$capital_gain!=0)],main="Outliers for non-zero Capital gain")
+boxplot(X$capital_loss[which(X$capital_loss!=0)],main="Outliers for non-zero Capital loss")
+```
+
+
+
+We can see there are still outliers even excluding zeros for capital gain and capital loss variables.
+
+```{r}
+# for some reason the missing values are still remaining in this version of the script,
+# so do the conversion of ? to NA again and remove the NA values before plotting:
+
+#convert ? values to NA in dataset and save into new dataframe:
+X <- as.data.frame(X %>% 
+                           mutate_if(is.factor, list(~na_if(., "?"))))
+
+```
+
+```{r}
+#check that ? values have been converted to NA:
+str(X)
+```
+
+Remove the NA values from the dataset before plotting:
+```{r}
+X <- na.omit(X)
+```
+
+
+
+
+###  Distributions of categorical variables by target variable 
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+par(mar=c(1,1,1,1))
+ggplot(X, aes(y = workclass, fill = income)) + geom_bar()
+```
+
+From the above bar chart we can see the majority of adults in the census were working in private sectors.
+
+```{r,echo=FALSE}
+#plotting education vs income
+ggplot(data = X, aes(y = education, fill = income)) +
+  geom_bar(position = "stack")   #different bars stacked together
+```
+The majority of people earning less than $50K are high school graduates. The next largest education group is some college, and the 
+third largest education group is Bachelors. 
+
+plotting marital status vs. income
+```{r, echo=FALSE, message=FALSE}
+
+ggplot(data = X, aes(y = marital_status, fill = income))+
+  geom_bar(position = "stack")
+```
+The majority of people surveyed are Married-civ-spouse, and in this marital status category, the income is roughly equally divided
+between <=50K or >50K. The second largest category is Never-married, with the majority of people earning <=50K. 
+
+
+```{r}
+ggplot(X, aes(relationship, fill = income)) + geom_bar()
+```
+Most people surveyed in the census belong to the Husband category of relationships, with slightly more people earning less than or equal to 50K. However, in the Husband category, there is almost an even split between the 2 target income classes. Not-in-family is the second largest category for relationships and the majority people in this category have income <=50K.
+
+plotting occupation vs income
+```{r, echo=FALSE}
+
+ggplot(data = X, aes(y = occupation, fill = income))+
+  geom_bar(position = "stack")
+```
+Most common occupations are Prof-specialty, Exec-managerial, Craft-repair, Sales, and Adm-clerical. For Exec-managerial, and Prof-specialty, there is an even number of people earning <=50K and >50K. For Craft-repair, Adm-clerical, and Sales, the majority
+of people earn <=50K.
+
+plotting native country vs. income
+```{r, echo=FALSE}
+ggplot(data = X, aes(y = native_country, fill = income))+
+  geom_bar(position = "stack")
+```
+Most people surveyed come from the United States. This makes sense as the census was conducted in the US. Other than the United States, 
+the second highest number of people come from Mexico.
+
+```{r, echo = FALSE}
+ggplot(X, aes(race, fill = income)) + geom_bar()
+```
+Most people surveyed are White, and earn <=50K. The second highest race category is Black.
+
+```{r, echo=FALSE}
+ggplot(X, aes(sex, fill = income)) + geom_bar()
+```
+
+```
+There are more than twice as many males surveyed in this census compared to females. 
+
+The missing ? levels in the X dataset still remain, can drop them:
+```{r, echo=FALSE}
+table(X$occupation)
+
+```
+
+drop the unused ? level in occupation, workclass and native_country variables
+```{r}
+X <- droplevels(X)
+```
+```{r}
+str(X)
+```
+
+```{r, echo= FALSE}
+##looking at relationship between numeric variables:
+numeric_cols = sapply(X, is.numeric)
+data_num_only=X[,numeric_cols]
+
+#data_num_only
+```
+#Can plot a Correlation Matrix - default one in R to see the relationship between numeric variables
+```{r, echo = FALSE}
+
+cor(data_num_only)
+```
+
+```{r, echo= FALSE}
+cor_result=rcorr(as.matrix(data_num_only))
+
+cor_result$r
+```
+
+```{r}
+## look at income with respect to age:
+income_by_age = 
+  X %>%
+  group_by(income) %>%
+  summarise(mean_age = mean(age, na.rm = TRUE))
+```
+
+```{r}
+#flattening correlation plot
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+  )
+}
+```
+
+```{r}
+#flatten correlation matrix:
+cor_result_flat = flattenCorrMatrix(cor_result$r, cor_result$P)
+head(cor_result_flat)
+```
+
+
+```{r, echo = FALSE}
+#visualize with a correlogram:
+library(corrplot)
+corrplot(cor_result$r, type = "upper", order = "hclust", tl.col = "black", tl.srt = 45)
+```
+
+It does not look like the numeric variables are very correlated with each other. 

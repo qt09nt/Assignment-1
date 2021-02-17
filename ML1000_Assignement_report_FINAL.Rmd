@@ -1,0 +1,1405 @@
+---
+title: '**Income Prediction. Classification Predictive Modeling**'
+author: "by Anupama r.k, Queenie Tsang, Crystal (Yunan) Zhu"
+date: "12/02/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+## Abstract
+
+Income Classifier is an application developed for ABC Handbags LLC to classify target population for a marketing campaign. The demographic information of the population is obtained from Adult dataset. The application is build using R and shinyapp following a CRISP-DM framework.
+
+
+## Background
+
+Our client ABC Handbags LLC is looking to open a new retail location exclusively for luxury handbags at XYZ square in New York City. To market the store's handbags, the client wants to target customers with an annual income above 50K in New York City. The dataset of people living in New York City available to us has incomplete income data. To identify customers with income above 50K, the client wants us to predict the income data for customers using the available data points.
+
+
+## Analytical Objective
+
+The objective of the project is to develop a supervised learning model and evaluate the effectiveness in predicting income above 50K USD. The model will classify income above/below 50K output against each input demographic item.Supervised learning model will be fitted for algorithms like Logistic Regression, Random Forest  and KNN. The most accurate and precise model will chosen for deployment.
+
+
+
+## Assumptions and Success Criteria
+1. Marketing team has sufficient demographic information on the population that the model needs to work with reasonable accuracy. 
+2. The dataset is an accurate representation of the current demographic to be used as a train dataset.
+3. Attributes like age, work hours,job type, education are more significant than other attributes in the dataset
+4. Achieving a classification accuracy above 80% and precision of 60% is ideal.
+
+
+
+## Ethics & Privacy
+
+The attributes used in the application has no significant sensitivity. If any sensitivity outcomes occur from usage of the application may be contextual. Personally Identifiable Information is not collected nor is it an output of the application. Some of the attributes are anonymized to a single level. The hosting environment has implemented security best practices. The data and application logic is not exposed in the application front. Authentication is not currently set for the deployed application.
+
+
+## Data Understanding 
+
+The data comes from UCI Machine Learning repository for [Adult Dataset](https://archive.ics.uci.edu/ml/datasets/census+income). The owner of the dataset is Ronny Kohavi and Barry Becker.The dataset is based on 1994 U.S Census dataset. The dataset has 16 attributes and 32561 records.An individual's annual income is dependent on various factors. Some of these factors include individual's education level, age, gender, occupation, and etc. Adult dataset is an ideal representation for our income prediction model. The target variable has two classes, values '>50K' and '<=50K', meaning it is a binary classification task.
+
+
+## Reformulate a problem statement as an analytics problem
+Our client is looking to open a business in a new location. The client is looking to open a store that sells products of one of their
+luxury brands. The luxury brand is trying to target people with income of above 50K. 
+The current business problem we are trying to solve is how to predict the income of a given customer into 2 classes: less than or equal to $50 thousand USD, or greater than $50 thousand USD. This is a business problem, because given some demographic information such as age, sex, education, marital status, occupation, we want to be able to predict the customer's income into the =<50K category or >50K category. 
+
+If we can predict this income accurately, the company can use this information to determine whether they should allocate resources to market some premium grade products to the customer. The marketing team can use this tool to find the audience for our marketing pitch in anticipation of the branch opening and improve targeted advertising to people who have income above 50K. The tool allows a
+true/false output against each demographic item.
+
+## Develop a proposed set of drivers and relationships to inputs
+The output function is the prediction of income, and whether it belongs to the =< $50K class or to the >$50K class. The input variables are the age, sex, occupation, workclass, education level, education number, relationship, marital status, final weight(refering to the weight of that demographic class within the current population survey), the capital gain, capital loss, hours per week (of work) and the native country.  
+- How does age affect the income class of a customer?
+- How does education level affect the income class of a customer?
+- What types of occupation is associated with income greater than $50K or with income less than or equal to $50K?
+
+## State the set of assumptions related to the problem 
+One assumption related to this problem is that the relationships between the input variables (such as age, occupation, workclass, marital status) to the target variable income obtained through the 1994 census data will hold true to what is observed today in 2021. 
+
+## Define key metrics of success 
+One key metric of success is that the prediction model can accurately predict the income class, given the input information.  
+
+## Describe how you have applied the ethical ML framework
+One of the considerations of the Machine Learning Ethics framework is how machine learning models have the potential to propagate biases through feedback loops. Our model aims to predict the income category for customers based on certain demographic information collected in the 1994 US census, and does have some potential to negatively impact individuals. For example, if the model predicts people of certain work class, race, gender, age or native country has a greater probability to have income less than $50 thousand, this information may perpetuate historic biases against people of that demographic. Based on the income predictions produced by this tool, companies may treat different groups of people differently, in terms of marketing resources targeted towards different groups of people. 
+In terms of privacy, all the data in the census dataset is anonymous and location data is not available, which helps prevent identification of any individual who contributed to the census dataset. The Income Prediction Shiny App tool does not collect any personal information of any individual so privacy is the default. It also does not track users who use the tool so privacy is embedded by design. User inputs to the Income Prediction tool is not retained.  
+
+
+## Identify and prioritize means of data acquisition
+The means of data acquisition is through downloading the US census adult data set.
+
+
+## Define and prepare your target variables. Use proper variable representations (int, float, one-hot, etc.).
+
+The target variable is income. 
+
+
+# **Modeling and Evaluation**
+ 
+
+## **Describe the data**
+
+### Data Dictionary
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+library(ggplot2)
+library(VIM)
+
+X=read.csv("adultdata.csv", stringsAsFactors = TRUE)
+#str(X)
+
+#summary
+colnames(X) =c("age", "workclass", "fnl_wgt", "education", "education_num", "marital_status", "occupation", "relationship", "race", "sex", "capital_gain", "capital_loss", "hours_per_week", "native_country", "income")
+#str(X)
+cat("The dimension of the dataset is",dim(X)[1],"by",dim(X)[2],".")
+```
+
+There are 32,561 records and 15 columns in the original data set.
+
+```{r,echo=FALSE}
+datatype=sapply(X,class)
+#datatype
+#6 numeric variables
+#9 categorical variables
+```
+
+There are 6 numeric and 9 categorical variables shown as follows:
+
+Column Name        | Data Type   | Column Description  
+-------------------|-------------| ------------------- 
+age                |Integer      |The age of the adult (e.g., 39, 50, 38, etc.)  
+workclass          |Factor       |The work class of the adult (e.g., Private, Self-emp-not-inc, Federal-gov, etc.)   
+fnl_wgt            |Integer      |The weights on the Current Population Survey (CPS) files are controlled to independent estimates of the civilian noninstitutional population of the US (e.g., 77516, 83311, etc.)
+education          |Factor       |The education of the adult (e.g., Bachelors, Some-college, 10th, etc.)
+education_num      |Integer      |The number years of the adult's education (e.g., 13, 9, 7, etc.)
+marital_status     |Factor       |The marital status of the adult (e.g., Divorced, Never-married, Separated, etc.)  
+occupation         |Factor       |The occupation of the adult (e.g., Tech-support, Craft-repair, Sales, etc. ) 
+relationship       |Factor       |The relationship of the adult in a family (e.g., Wife, Own-child, Husband, etc.  )
+race               |Factor       |The race of the adult (e.g., White, Asian-Pac-Islander, Amer-Indian-Eskimo, etc.)
+sex                |Factor       |The gender of the adult.(Female, Male )
+capital_gain       |Integer      |The capital gain of the adult (e.g., 0, 2174, 14084, etc.)
+capital_loss       |Integer      |The capital loss of the adult (e.g., 0, 1408,2042, etc.)
+hours_per_week     |Integer      |The number of working hours each week for the adult (e.g. 40, 13, 16, etc.)
+native_country     |Factor       |The native country of the adult (e.g. Cambodia, Canada, Mexico, etc.)
+income             |Factor       |The yearly income of the adult at 2 levels: <=50K and >50K.
+
+### Data Description
+
+
+#### First, let's check whether there are duplicates in the dataset.
+
+
+```{r, echo=FALSE,message=FALSE}
+library(tidyverse)
+#library(hutils)
+#Remove duplicated rows based on all columns
+# - if two rows are exactly the same, keep only one of them
+X_nodup=distinct(X,X[,1:15], keep_all=TRUE)[,-16]
+
+#identify duplicated rows
+X_dup=X[duplicated(X),]
+
+cat("The number of duplicated records in the dataset is",dim(X_dup)[1],".","\n")
+#dim(X_dup)
+
+#use X_nodup for all later analysis
+
+#unique(X_dup$fnl_wgt)
+#cat("Let's look at several examples of the duplicated records:", "\n")
+X_dup_sample=subset(X,fnl_wgt==308144 | fnl_wgt== 250051)
+X_dup_sample=X_dup_sample[order(X_dup_sample$fnl_wgt),]
+
+X=X_nodup
+```
+
+
+For the benefit of this report's length, let's look at a sample of duplicated records:
+
+
+```{r, echo=FALSE, message=FALSE, paged.print=FALSE, results='asis'}
+
+library(xtable)
+options(xtable.floating = FALSE)
+options(xtable.timestamp = "")
+options(xtable.comment = FALSE)
+
+#library(dplyr)
+#library(DT)
+#library(knitr)
+#print(xtable(X_dup_sample[,1:8]), include.rownames=FALSE)
+print(xtable(X_dup_sample[,1:8]))
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+
+#print(xtable(X_dup_sample[,9:15],caption = "Adult Income Data Sample", caption.placement = "top"))
+
+print(xtable(X_dup_sample[,9:15]))  
+
+
+```
+
+
+The 24 duplicated rows will be removed from all later analysis.
+  
+  
+#### Then let's check whether there are any missing values in the dataset.
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+#check missing values of each column
+m=c()
+for (i in 1:ncol(X))  {
+  m[i]=sum(grepl("?",X[,i],fixed = TRUE))
+}
+missval=paste0(colnames(X),rep("-",15),m,rep(" missing values",))
+#cat("The number of missing values for each variable are:")
+#missval
+
+#Recode missing values to be more standard - replace ? with NA
+#ifelse will coerce the factor values into intergers, thus use as.character to main the original factor values
+X$workclass=ifelse(X$workclass==" ?",NA,as.character(X$workclass))
+X$occupation=ifelse(X$occupation==" ?",NA,as.character(X$occupation))
+X$native_country=ifelse(X$native_country==" ?",NA,as.character(X$native_country))
+
+#then transform the characters back to factors
+X$workclass=as.factor(X$workclass)
+X$occupation=as.factor(X$occupation)
+X$native_country=as.factor(X$native_country)
+#str(X)
+
+#display the proportion of missing values
+pMiss = function(x){sum(is.na(x))/length(x)*100}
+#cat("The percentages of missing values for each variable are:")
+#apply(X,2,pMiss)
+
+datatype=sapply(X,class)
+
+#Visualize missing data
+#install.packages("VIM") #large package install before class
+#break dataset into 2 pieces if you have low memory computer...
+```
+
+```{r , echo=FALSE}
+
+aggr_plot = aggr(X, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels=names(X), cex.axis=.7, gap=3, ylab=c("Histogram of missing data","Pattern"))
+
+```
+
+Note: we didn't find a way to remove the warning message and accommodate the entire plot in the page due to the limitation of time. 
+
+  
+From the above, there are missing values in this data set and all the missing values are from categorical variables.  
+  
+  
+### Comparing records with at least one missing value to those without any missing values.  
+
+
+In order to better understand the patterns of the missing values, let's look at some descriptions of the records with missing values.
+
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+library(gridExtra)
+X_wmiss=subset(X,is.na(workclass) | is.na(occupation) | is.na(native_country))
+
+X_nomiss=setdiff(X,X_wmiss)
+
+X$missind=ifelse(is.na(X$workclass) | is.na(X$occupation) | is.na(X$native_country),"Y","N")
+
+#flip the coordinates/make horizontal barplots due to large number of levels in categorical variables
+p1 = ggplot(X, aes(age, fill = missind)) + geom_bar() + coord_flip()
+
+p2 = ggplot(X, aes(education, fill = missind)) + geom_bar() + coord_flip()
+p3 = ggplot(X, aes(marital_status, fill = missind)) + geom_bar() + coord_flip()
+p4 = ggplot(X, aes(relationship, fill = missind)) + geom_bar() + coord_flip()
+p5 = ggplot(X, aes(race, fill = missind)) + geom_bar() + coord_flip()
+p6 = ggplot(X, aes(sex, fill = missind)) + geom_bar() + coord_flip()
+p7 = ggplot(X, aes(hours_per_week, fill = missind)) + geom_bar() + coord_flip()
+p8 = ggplot(X, aes(income, fill = missind)) + geom_bar() + coord_flip()
+
+p1
+p2
+p3
+p4
+p5
+p6
+p7
+p8
+
+```
+
+
+From the above bar charts comparing the distributions of 7 variables of the group that do not have missing values and the group that have at least one missing record, we can see that the missing records are generally evenly  distributed across all ages, education level, marital status, family relationship, race, working hours per week and the target variable income. When compared with the whole population in the census, the percentages of people not answering all the survey questions are slightly lower in the age group between 20-50, Married civ spouse marital status and husbands, and 60-70 years old and never-married people tend to omit some questions to answer. Males tend to have fewer missing records than females. 
+
+Since the proportion of missing values is relatively small (7%) where we would still have 30K records left, and it's generally the same for people with income higher and lower than 50K USD, we think it would be reasonable to remove the records with missing values for our analysis in this report. If we had more time, we'd recommend fitting models separately for female and male since they have different willingness to answer occupation, work class or native country related questions, which could be strong predictors for adult income.  
+
+
+### Remove rows with missing values
+
+```{r,echo=FALSE}
+X=X[complete.cases(X),]
+cat("Now the dimension of the dataset becomes:")
+dim(X)
+
+```
+
+  
+**Now let's view the summary of the 6 numeric columns:**    
+
+        
+```{r, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+
+X=X[,-16]
+sum_num=matrix(,15,6)
+
+for (i in 1:ncol(X)) {
+  
+  if (class(X[,i])=="integer") {
+    
+    sum_num[i,]=summary(X[,i])[1:6]
+  } 
+  
+}
+sum_num=sum_num[complete.cases(sum_num),]
+
+colnames(sum_num)=names(summary(X$age))
+rownames(sum_num)=colnames(X)[datatype=="integer"]
+
+print(xtable(sum_num))  
+  
+
+
+```
+  
+   
+Let's take a clearer look at the numeric values by visualizing their distributions using histograms, except for capital gain and capital loss.
+
+
+```{r, echo=FALSE,message=FALSE}  
+
+p1 =   ggplot(data=X)+ geom_histogram(mapping=aes(x=age),binwidth = 0.5,color="darkblue", fill="lightblue")
+
+p2 =   ggplot(data=X)+ geom_histogram(mapping=aes(x=fnl_wgt),binwidth = 50,color="darkblue", fill="lightblue")
+  
+p3 =    ggplot(data=X)+ geom_histogram(mapping=aes(education_num),binwidth = 1,color="darkblue", fill="lightblue")
+      
+p4 =    ggplot(data=X)+ geom_histogram(mapping=aes(hours_per_week),binwidth = 1,color="darkblue", fill="lightblue")
+        
+library(gridExtra)
+grid.arrange(p1,p2,p3,p4,nrow=2,ncol=2)
+
+
+```
+
+
+Both age and fnl_wght variables are skewed to the right, where log-normal transformation could help if modeling techniques with normality assumptions were to be used. The working hours per week variable is heavy-tailed distributed, meaning there are still quite a number of people working extremely small or large number of hours each week.
+
+
+**Boxplots to discover outliers for each numeric variable.**
+
+
+```{r, echo=FALSE}
+par(mar = c(2,2,2,2))
+par(mfrow=c(2,3))
+for (i in 1:ncol(X)){
+  
+  if (class(X[,i])=="integer") {
+    boxplot(X[,i], main=colnames(X)[i])
+  }
+}
+
+```
+
+
+There are outliers for all numeric variables. There are large amount of records for ages and fnl_wght that are larger than their upper quantiles, which are consistent with the histograms showing their distributions are skewed to the right.  
+
+
+Since there are large number of zeros in capital_gain & capital_loss variables, let's check if there are still outliers for non-zero values.
+
+
+```{r, echo=FALSE, message=FALSE}
+par(mar = c(1,1,1,1))
+par(mfrow=c(1,2))
+boxplot(X$capital_gain[which(X$capital_gain!=0)],main="Outliers for non-zero Capital gain")
+
+boxplot(X$capital_loss[which(X$capital_loss!=0)],main="Outliers for non-zero Capital loss")
+
+
+```
+
+
+
+We can see there are still outliers even excluding zeros for capital gain and capital loss variables.
+
+
+###  Distributions of categorical variables by target variable.  
+
+
+```{r, message=FALSE, warning=FALSE}
+par(mar=c(1,1,1,1))
+
+ggplot(X, aes(workclass, fill = income)) + geom_bar()
+
+```
+
+
+From the above bar chart we can see the majority of adults in the census were working in private sectors.  
+
+
+```{r,message=FALSE,warning=FALSE}
+#plotting education vs income
+ggplot(data = X, aes(y = education, fill = income)) +
+  geom_bar(position = "stack")   
+```
+
+
+The majority of people earning less than $50K are high school graduates. The next largest education group is some college, and the 
+third largest education group is Bachelors.  
+
+
+```{r,message=FALSE,warning=FALSE}
+#plotting marital status vs. income
+ggplot(data = X, aes(y = marital_status, fill = income))+
+  geom_bar(position = "stack")  
+```
+
+
+The majority of people surveyed are Married civ spouse, and in this marital status category, the income is roughly equally divided
+between <=50K or >50K. The second largest category is Never-married, with the majority of people earning <=50K.  
+
+
+```{r,message=FALSE,warning=FALSE}
+ggplot(X, aes(relationship, fill = income)) + geom_bar()
+```
+
+
+Most people surveyed in the census belong to the Husband category of relationships, with slightly more people earning less than or equal to 50K. However, in the Husband category, there is almost an even split between the 2 target income classes. Not-in-family is the second largest category for relationships and the majority people in this category have income <=50K.  
+
+
+```{r,message=FALSE,warning=FALSE}
+#plotting occupation vs income
+ggplot(data = X, aes(y = occupation, fill = income))+
+  geom_bar(position = "stack")
+```
+
+
+Most common occupations are Prof-specialty, Exec-managerial, Craft-repair, Sales, and Adm-clerical. For Exec-managerial, and Prof-specialty, there is an even number of people earning <=50K and >50K. For Craft-repair, Adm-clerical, and Sales, the majority of people earn <=50K.  
+
+
+```{r,message=FALSE,warning=FALSE}
+#plotting native country vs. income
+ggplot(data = X, aes(y = native_country, fill = income))+
+  geom_bar(position = "stack")
+```
+
+
+Most people surveyed come from the United States. This makes sense as the census was conducted in the US. Other than the United States, 
+the second highest number of people come from Mexico.  
+
+
+```{r,message=FALSE,warning=FALSE}
+ggplot(X, aes(race, fill = income)) + geom_bar()
+```
+
+
+Most people surveyed are White, and earn <=50K. The second highest race category is Black.  
+
+
+```{r,warning=FALSE,message=FALSE}
+ggplot(X, aes(sex, fill = income)) + geom_bar()
+```
+
+
+There are more than twice as many males surveyed in this census compared to females. 
+
+
+### Explore relationships between attributes
+
+
+**Pearson's correlation between numeric variables.**
+
+
+```{r, message=FALSE, warning=FALSE,tidy=TRUE}
+#Display the chart of a correlation matrix
+library(PerformanceAnalytics)
+numindex=datatype=="integer"
+chart.Correlation(scale(X[,numindex]), histogram=TRUE, pch=19)
+```
+
+
+From the chart of the correlation matrix, we can see that while the magnitude of the correlations are small, all of them are statistically significant. For example, age and education_num are significantly correlated. Fnl_wgt and education num are also significantly correlated. 
+
+
+The following correlogram confirms that the correlations between numeric variables are very small, while they are significantly different from zero, probably due to large sample size.
+
+
+```{r, message=FALSE, warning=FALSE, tidy=TRUE}
+library("Hmisc")
+
+cormat <- rcorr(as.matrix(X[,numindex]))
+
+#Draw a correlogram
+library(corrplot)
+corrplot(cormat$r, type = "upper", 
+         tl.col = "black", tl.srt = 45, p.mat = cormat$P, sig.level = 0.01, insig = "blank")
+
+```
+
+
+**Chi-square test & Cramer's V to show associations between categorical variables**  
+
+
+```{r, echo=FALSE,message=FALSE}
+#If many of the expected counts are very small, the Chi-squared approximation may be poor
+
+X_cat=subset(X,select=c(datatype=="factor"))
+
+#all combinations from 1-9
+#expand.grid will create dups (c(2,1) & c(1,2)), so don't use it
+allcom=combn(ncol(X_cat),2)
+#allcom is 2*36, each column is a combination of 1-9
+#the first row is the index for var1, the second row is the index for var2
+teststat=c()
+pvalue=c()
+ind1=c()
+ind2=c()
+cramv=c()
+chisqmat=matrix(,9,9)
+pmat=matrix(,9,9)
+crammat=matrix(,9,9)
+
+library(DescTools)
+
+#use suppressWarnings() to suppress showing the warning msgs from chisq.test
+
+suppressWarnings (
+  for (i in 1:ncol(allcom)) {
+    
+    teststat[i]=chisq.test(X[,allcom[,i][1]],X[,allcom[,i][2]])$statistic
+    pvalue[i]=chisq.test(X[,allcom[,i][1]],X[,allcom[,i][2]])$p.value
+    ind1[i]=allcom[,i][1]
+    ind2[i]=allcom[,i][2]
+    cramv[i]=CramerV(X[,allcom[,i][1]],X[,allcom[,i][2]])
+    chisqmat[allcom[,i][1],allcom[,i][2]]=teststat[i]
+    pmat[allcom[,i][1],allcom[,i][2]]=pvalue[i]
+    crammat[allcom[,i][1],allcom[,i][2]]=cramv[i]
+    
+  })
+
+#sum(pvalue<0.05)
+#all pvalues are less than 0.05 - all categorical variables are significantly associated with each other
+colnames(chisqmat)=colnames(X_cat)
+rownames(chisqmat)=colnames(X_cat)
+colnames(pmat)=colnames(X_cat)
+rownames(pmat)=colnames(X_cat)
+colnames(crammat)=colnames(X_cat)
+rownames(crammat)=colnames(X_cat)
+
+
+```
+
+
+The test statistics from Chiq-Square Test between each pair of the categorical variables.  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+chisq_table=xtable(chisqmat)
+digits(chisq_table)=2
+print(chisq_table,scalebox=.8)
+```
+
+
+
+The p-values from the Chi-Square Test between each pair of the categorical variables.  
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+
+pmat_table=xtable(pmat)
+digits(pmat_table)=2
+print(pmat_table, scalebox=.9)
+
+```
+
+
+The Cramer's V statistics between each pair of categorical variables to measure their associations.  
+
+
+
+``````{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+crammat_table=xtable(crammat)
+digits(crammat_table)=2
+print(crammat_table,scalebox=.9)
+```
+
+
+From the Cramer's V, we can see that occupation and family relationship, marital_status and income are two of the pairs that have strong associations.  
+
+
+## Feature Engineering
+
+From the above exploratory analysis on the numeric and categorical variables, we think the following transformations can be adopted to build good-quality predictive models.  
+
+
+**1.Education and education number are redundant.**  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+table1=as.matrix(table(X$education,X$education_num))
+print(xtable(table1),scalebox=.9)
+
+```
+
+
+From the above perfectly 1-1 relationship, we can see these two variables are essentially exact the same. So we decide to remove the education_num variable.
+
+```{r,tidy=TRUE,message=FALSE,warning=FALSE}
+
+#drop educationnum variable
+X=subset(X,select = -education_num)
+
+```
+
+
+**2. Re-group Native countries.**  
+
+
+There are 41 levels, namely 41 different countries, in the dataset. Since too many levels for a categorical variable could lead to over-fitting, we decide to regroup the native countries into regions.  
+
+
+```{r, echo=FALSE}
+
+table(subset(X,native_country==" South")$race)
+```
+
+
+Since the race of almost all records with Native country "South" is "Asian-Pac-Islander", we think the country "South" is very likely to be South Korea. So we decided to group the country "South" into "Asia_East".  
+
+
+```{r, message=FALSE,warning=FALSE, tidy=TRUE}
+Asia_East <- c(" Cambodia", " China", " Hong", " Laos", " Thailand",
+               " Japan", " Taiwan", " Vietnam", " South", " Philippines")
+
+Asia_Central <- c(" India", " Iran")
+
+Central_America <- c(" Cuba", " Guatemala", " Jamaica", " Nicaragua", 
+                     " Puerto-Rico",  " Dominican-Republic", " El-Salvador", 
+                     " Haiti", " Honduras",  " Trinadad&Tobago")
+
+South_America <- c(" Ecuador", " Peru", " Columbia")
+
+North_America <- c(" Canada", " United-States"," Mexico", " Outlying-US(Guam-USVI-etc)")
+
+Europe_West <- c(" England", " Germany", " Holand-Netherlands", " Ireland", 
+                 " France", " Greece", " Italy", " Portugal", " Scotland")
+
+Europe_East <- c(" Poland", " Yugoslavia", " Hungary")
+
+
+X <- mutate(X, 
+       native_region = ifelse(native_country %in% Asia_East, " East-Asia",
+                ifelse(native_country %in% Asia_Central, " Central-Asia",
+                ifelse(native_country %in% Central_America, " Central-America",
+                ifelse(native_country %in% South_America, " South-America",
+                ifelse(native_country %in% Europe_West, " Europe-West",
+                ifelse(native_country %in% Europe_East, " Europe-East",
+                ifelse(native_country %in% North_America, "North America", "Other"))))))))
+
+#convert native_region to a factor
+#7 regions now
+X$native_region=as.factor(X$native_region)
+
+```
+
+
+**3. Re-group Capital Gain and Capital Loss.**  
+
+First, let's look at how many zeros are in each of these two variables.  
+
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+
+#summary(X$capital_gain)
+#summary(X$capital_loss)
+
+p0_capitalgain=length(X$capital_gain[which(X$capital_gain==0)])/length(X$capital_gain)
+
+p0_capitalloss=length(X$capital_loss[which(X$capital_loss==0)])/length(X$capital_loss)
+
+#library(xtable)
+#print(xtable(p0_capitalgain, p0_capitalloss))
+
+cat("the proportion of zeros in Capital Gain is ",p0_capitalgain*100,"%","\n",
+    "the proportion of zeros in Capital Loss is ",p0_capitalloss*100,"%", sep = "" )
+
+cat("The summary of non-zeros for thes two variables:", "\n")
+summary(X$capital_gain[which(X$capital_gain!=0)])
+summary(X$capital_loss[which(X$capital_loss!=0)])
+
+```
+
+
+Based on the boxplots and summary of Capital Gain and Capital Loss variables in the Data Description section, and the fact that over 90% of the two variables are 0, we decide to categorize these two variables into groups in the following way:  
+
+
+- the first group is for the zeros;  
+
+
+- the other groups are based on quantiles of non-zeros. More specifically, if a value is larger than zero and lower than the 1st quantile, it's grouped as "Low".  
+
+
+- the values between 1st and 3rd quantitles are grouped into "Medium" and those higher than the 3rd quantile are categorized as "High".  
+
+
+
+```{r, tidy=TRUE,message=FALSE,warning=FALSE}
+
+X=mutate(X, cap_gain = ifelse(X$capital_gain==0, "Zero", 
+                     ifelse(X$capital_gain>0 & X$capital_gain<3464,"Low",
+                     ifelse(X$capital_gain>=3464 & X$capital_gain<14084,"Medium","High"))),
+         
+       cap_loss = ifelse(X$capital_loss==0,"Zero",
+                  ifelse(X$capital_loss>0  & X$capital_loss<1672,"Low",
+                  ifelse(X$capital_loss>=1672 & X$capital_loss<1977,"Medium","High")))
+           
+           )
+
+X$cap_gain=as.factor(X$cap_gain)
+X$cap_loss=as.factor(X$cap_loss)
+
+
+```
+
+
+**4. Hours per week**  
+
+
+From the boxplot and histogram in the Data Description section before, we've known there are large number of outliers in the hours_per_week variable.  
+
+
+So We decide to group this variable in the following way:  
+
+
+- if the value is lower than the 1st quantile (40), it's called "less than 40 hours";  
+- if a value is between the 1st and 3rd quantitle (40 to 45), it's called "40 to 45 hours";    
+- if the value is higher than 3rd quantile but lower than 50 , it's called "45 to 50 hours";  
+- if the value is between 50 and 60, it's called "50 to 60 hours";   
+- if the value is between 60 and 70, it's called "60 to 70 hours";   
+- if the value is between 70 and 80, it's called "70 to 80 hours";   
+- if the value is more than 80, it's called "greater than 80 hours";  
+
+
+```{r, message=FALSE, tidy=TRUE, warning=FALSE, paged.print=FALSE, results='asis'}
+#summary(X$hours_per_week)
+
+X=mutate(X, 
+         weekly_hours=ifelse(X$hours_per_week<40,"less than 40 hrs",
+                        ifelse(X$hours_per_week<=45, "40 to 45 hrs",
+                        ifelse(X$hours_per_week<=50, "45 to 50 hrs",
+                        ifelse(X$hours_per_week<=60, "50 to 60 hrs",
+                        ifelse(X$hours_per_week<=70, "60 to 70 hrs",
+                        ifelse(X$hours_per_week<=80, "70 to 80 hours",
+                               "greater than 80 hrs")))))))
+         
+         
+X$weekly_hours=as.factor(X$weekly_hours)
+
+table4=as.matrix(table(X$weekly_hours))
+print(xtable(table4, caption = "Frequency table of weekly_hours" ) )
+
+
+```
+
+
+**5. Drop empty level of work class.**  
+
+
+We noticed one of the levels of the work class variable does not have any records in it, so we decide to drop that level to avoid potential issues caused by empty cells.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+print(xtable(as.matrix(table(X$workclass))))
+X$workclass=droplevels(X$workclass)
+```
+
+
+**6. Log transformation and standardization of fnl_wgt**  
+
+
+```{r,echo=FALSE,warning=FALSE}
+par(mar=c(2,2,2,2))
+hist(X$fnl_wgt)
+hist(log(X$fnl_wgt))
+hist(scale(log(X$fnl_wgt)))
+```
+
+
+From the above histograms, we can see that the fnl_wgt generally follows a log-normal distribution and the values are generally large. So we decide to perform a log transformation and then standardize it, after which the variable is generally normally distributed with small values.  
+
+
+```{r}
+X=mutate(X,
+         fnlwgt_logstand=scale(log(X$fnl_wgt)))
+
+```
+
+
+**6. Age standardization.**  
+
+
+```{r}
+X=mutate(X,
+        age_stand=scale(X$age))
+
+```
+
+
+To make age in the same range of the standardized fnl_wgt, we decide to standardize age as well.  
+
+
+**7. Group marital status.**  
+
+
+```{r,tidy=TRUE}
+X=mutate(X,
+         marital_status_group=ifelse(marital_status %in% 
+      c(" Married-AF-spouse"," Married-civ-spouse"," Married-spouse-absent"), "Married", as.character(marital_status)))
+        
+X$marital_status_group=as.factor(X$marital_status_group)
+
+```
+
+
+**8. Drop the variables that would not be used for building predictive models.**  
+
+
+```{r, tidy=TRUE}
+
+X=subset(X, select = -c(capital_gain, capital_loss,hours_per_week,native_country,marital_status))
+cat("The current structure of the dataset is:")
+str(X)
+```
+
+
+
+## Modeling  
+
+  
+  
+###Recode target variable.  
+  
+  
+
+First, for the simplicity in coding and to avoid potential issues caused by the characters in the target variable, let's re-code the values of target variable to be "Y", meaning yearly income is higher than 50K USD, and "N", indicating the income is no more than 50K.  
+
+
+```{r,tidy=TRUE,message=FALSE,warning=FALSE}
+
+
+X$income=ifelse(X$income==" <=50K","N","Y")
+X$income=as.factor(X$income)
+```
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+cat("Now the levels of the target variable are:")
+summary(X$income)
+
+```
+
+
+
+**1. Train-test split.**
+
+Before training supervised learning models, we first split the dataset into training and testing sets.
+
+
+```{r, echo=FALSE,message=FALSE}
+library(caret)
+library(tidyverse)
+
+#train-test split (a 80-20 split)
+#education level & ednum are redundant!!
+#too many levels in the variable lead to overfitting?
+set.seed(123)
+#data split based on the outcome variable - this is actually stratified split!
+X_index=createDataPartition(X$income, p=0.8, list=FALSE)
+X_train=X[X_index,]
+X_test=X[-X_index,]
+
+cat("The number of the two levels of the target variable are:")
+summary(X_train$income)
+#imbalanced dataset - N:Y=18107:6005
+```
+
+
+**2. Down-sample the majority group to balance the training data.**
+
+
+We've seen from Data Exploratory analysis that there are about 3 times of people making no more than 50K annually (the majority group) than those who make over 50K a year (the minority group), so the dataset is imbalanced, which could lead to over-fitting issues. So we decide to down-sample the majority group. More specifically, we will randomly select 34% of the records that have annual income no more than 50K, and then combine them with all the records in the minority group.  
+
+
+* First, randomly select 34% of records from the majority group.  
+
+
+```{r, echo=FALSE,message=FALSE}
+set.seed(123)
+library(dplyr)
+X_train_down=sample_frac(subset(X_train,X_train$income=="N"),0.34,replace = FALSE)
+
+cat("The number of the two levels of the target variable at the randomly selected majority sample are:")
+summary(X_train_down$income)
+
+```
+
+* Then, combine the randomly down sampled majority group with the original minority group.  
+
+
+```{r,echo=FALSE,message=FALSE}
+
+X_train_bal=rbind(X_train_down,subset(X_train,X_train$income=="Y"))
+
+cat("The number of the two levels of the target variable at the combined balanced sample are:")
+summary(X_train_bal$income)
+#N:Y=6156:6005
+```
+
+
+* Next, randomly shuffle the rows so that not all "N" records are on the top and "Y"s are in the end.  
+
+
+```{r, echo=FALSE, message=FALSE}
+rowind=sample(nrow(X_train_bal))
+X_train_bal=X_train_bal[rowind,]
+
+cat("The number of the two levels of the target variable at the final training dataset are not changed!","\n")
+summary(X_train_bal$income)
+#the ratio of N vs Y is 6156:6005 
+```
+
+
+
+### Create different sets of features to train supervised learning models.  
+
+
+Based on different ways of cleaning the variables, we have different sets of features to train supervised learning models on.  
+
+####Training scenario 1: apply Random Forest, KNN and Logistic Regresstion to transformed variables.   
+
+
+**Random Forest Model.**  
+
+
+We will use 5-fold cross-validation for the re-sampling to tune model  parameters.  
+
+
+```{r,tidy=TRUE}
+cv_5=trainControl(method = "cv", number = 5, 
+                  allowParallel = TRUE, 
+                  summaryFunction = twoClassSummary , 
+                  classProbs = TRUE)
+```
+
+
+```{r,message=FALSE, warning=FALSE, tidy=TRUE}
+
+#random forest
+library(randomForest)
+set.seed(123)
+t1_rf=proc.time()
+model_rf <- randomForest(income ~ age_stand + workclass + fnlwgt_logstand +             education + marital_status_group + occupation + relationship +              race + sex + native_region + cap_loss + cap_gain + weekly_hours,             metric="ROC",
+            data = X_train_bal,
+            trControl=cv_5 )
+t2_rf=proc.time()
+```
+
+```{r, echo=FALSE,warning=FALSE}
+cat("The computational time for training a random forest model is",(t2_rf-t1_rf)[3],"s.","\n")
+
+```
+
+
+```{r,echo=FALSE,message=FALSE}
+cat("The fitted random forest model:", "\n")
+model_rf
+cat("Importance of features based on the random forest model:","\n")
+model_rf$importance
+par(mar=c(2,2,2,2))
+plot(model_rf)
+
+#confusion matrix on test data
+conf_rf=confusionMatrix( predict(model_rf, newdata = X_test), 
+                         reference=X_test$income,
+                         positive="Y") 
+cat("The confusion matrix of random forest model on test data:","\n")
+conf_rf
+#accuracy 79.1%%, sens 84%, spec 77%, NIR 75%, Kappa 0.5246  
+library(pROC)
+
+roc.randomForestModel = roc(X_test$income,                          as.vector(ifelse(predict(model_rf, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+
+auc.randomForestModel = auc(roc.randomForestModel)
+
+```
+
+
+Then let's look at the ROC curve and AUC of the random forest model.  
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(RColorBrewer) # color palettes
+# pick palettes
+mainPalette = brewer.pal(8,"Dark2")
+
+plot.roc(roc.randomForestModel, print.auc = T, auc.polygon = T,col = mainPalette[1] ,print.thres = "best" )
+#AUC 0.809
+
+```
+
+
+**KNN Model.**  
+
+K-nearest neighbors (KNN) algorithm is one of the supervised learning algorithms that can be used for classification problems. It is a lazy learning algorithm because it does not have a specialized training phase and uses all the data for training while classification. KNN is also a non-parametric learning algorithm because it does not have assumptions of the data set.
+
+
+```{r,tidy=TRUE,echo=TRUE,warning=FALSE,message=FALSE}
+#knn
+set.seed(123)
+t1_knn=proc.time()
+model_knn=train(income ~ age_stand + workclass + fnlwgt_logstand +             education + marital_status_group + occupation + relationship +              race + sex + native_region + cap_loss + cap_gain + weekly_hours,
+                data = X_train_bal,
+                 metric="ROC",
+                trControl=cv_5, method="knn")
+t2_knn=proc.time()
+cat("The computational time of training a knn model is",(t2_knn-t1_knn)[3],"s.","\n")
+
+cat("The fitted knn model:","\n")
+model_knn
+plot(model_knn)
+```
+
+
+From the above plot of accuracy and number of neighbors, we can see that the accuracy still increases after training on the default number of ks. So we decide to increasing the number of k values to 15 to try to locate a better model.
+
+
+```{r,warning=FALSE,message=FALSE,tidy=TRUE}
+set.seed(123)
+t1_knn=proc.time()
+model_knn=train(income ~ age_stand + workclass + fnlwgt_logstand +             education + marital_status_group + occupation + relationship +              race + sex + native_region + cap_loss + cap_gain + weekly_hours,
+                data = X_train_bal, 
+                metric="ROC",
+                trControl=cv_5, 
+                method="knn", 
+                tuneLength = 15)
+t2_knn=proc.time()
+```
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+cat("The computational time of training a knn model is",(t2_knn-t1_knn)[3],"s.","\n")
+
+plot(model_knn)
+```
+
+Now we can see the accuracy does not increase much once the number of neighbors reaches about 15.
+
+```{r,echo=FALSE}
+cat("The current fitted KNN models trying more tuning parameters:")
+model_knn
+```
+
+
+```{r, echo=FALSE, message=FALSE,warning=FALSE}
+#confusion matrix on test data
+conf_knn=confusionMatrix( predict(model_knn, newdata = X_test), 
+                         reference=X_test$income,
+                         positive="Y")
+cat("The confusion matrix of knn model on test data:")
+conf_knn
+#accuracy 77%, sens 85%, spec 74%, NIR 75%
+
+#ROC & AUC
+roc.knn = roc(X_test$income,                          as.vector(ifelse(predict(model_knn, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+
+auc.knn = auc(roc.knn)
+
+```
+
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+
+plot.roc(roc.knn, print.auc = T, auc.polygon = T,col = mainPalette[2] ,print.thres = "best" )
+#AUC 0.796
+```
+
+As there are mixed types of data in our dataset, we are supposed to use the gower distance metric in the KNN method. However, we are not able to specify "gower" in the train() function and the knngow() function which can run knn using the gower metric is not available to our personal version of R, so for future discussion, if time allows, please try to run the KNN method using gower distance metric on this data set.
+
+
+**Logistic Regression Model.**
+
+```{r, message=FALSE, warning=FALSE, tidy=TRUE}
+#logreg
+set.seed(123)
+t1_log=proc.time()
+model_logreg=train(income ~age_stand + workclass + fnlwgt_logstand +             education + marital_status_group + occupation + relationship +              race + sex + native_region + cap_loss + cap_gain + weekly_hours,
+                   data = X_train_bal, 
+                   metric="ROC",
+                   trControl=cv_5, method="regLogistic")
+
+t2_log=proc.time()
+```
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+cat("The computational time of training a logistic regression on transformed variables is",(t2_log-t1_log)[3],"s.","\n")
+
+cat("The fitted logistic regression model:","\n")
+model_logreg
+
+#confusion matrix on test data
+conf_logreg=confusionMatrix( predict(model_logreg, newdata = X_test), 
+                         reference=X_test$income,
+                         positive="Y")
+cat("The confusion matrix of logistic regression model:","\n")
+conf_logreg
+#accuracy 80%, sens 82%, spec 80%, NIR 75%
+
+#ROC & AUC
+roc.logreg = roc(X_test$income,as.vector(ifelse(predict(model_logreg, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)))
+
+auc.logreg = auc(roc.logreg)
+```
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+
+plot.roc(roc.logreg, print.auc = T, auc.polygon = T,col = mainPalette[3] ,print.thres = "best" )
+#AUC 0.81
+```
+
+**Training scenario 2: Logistic Regression Model on unstandardized age and fnl_wgt.**
+
+```{r, message=FALSE,warning=FALSE, tidy=TRUE}
+#logreg
+set.seed(123)
+t1_log_2=proc.time()
+model_logreg_ori=train(income ~ age + workclass + fnl_wgt + education + marital_status_group + occupation + relationship + race + sex + native_region + cap_loss + cap_gain + weekly_hours,
+                   data = X_train_bal,
+                   metric="ROC",
+                   trControl=cv_5, 
+                   method="regLogistic")
+t2_log_2=proc.time()
+```
+
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+cat("The time of training a logistic regression model using unstandardized variables is",(t2_log_2-t1_log_2)[3],"s.","\n")
+
+
+#cat("The fitted logistic regression model:","\n")
+#model_logreg_ori
+
+#confusion matrix on test data
+conf_logreg_ori=confusionMatrix( predict(model_logreg_ori, newdata = X_test), 
+                         reference=X_test$income,
+                         positive="Y")
+cat("The confusion matrix of logistic regression model:","\n")
+conf_logreg_ori
+#accuracy 80%, sens 82%, spec 80%, NIR 75%
+
+#ROC & AUC
+roc.logreg_ori = roc(X_test$income,as.vector(ifelse(predict(model_logreg_ori, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+
+auc.logreg_ori = auc(roc.logreg_ori)
+
+```
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+
+plot.roc(roc.logreg_ori, print.auc = T, auc.polygon = T,col = mainPalette[4] ,print.thres = "best" )
+#AUC 0.811
+```
+
+
+**Training scenario 3: Logistic Regression Model on unstandardized age without fnl_wgt.**  
+
+We are going to remove final weight for the model because it has to do with a weighted value for certain demographics when the census was conducted. However, it would not make sense as an input for individual users 
+of the Shiny app
+
+```{r, message=FALSE, warning=FALSE,tidy=TRUE}
+#logreg
+set.seed(123)
+t1_log_3=proc.time()
+model_logreg_nofnlwgt=train(income ~ age + workclass + education + marital_status_group + occupation + relationship + race + sex + native_region + cap_loss + cap_gain + weekly_hours,
+                   data = X_train_bal, 
+                   trControl=cv_5, 
+                   metric="ROC",
+                   method="regLogistic")
+t2_log_3=proc.time()
+```
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+cat("The computational time of training a logistic regression model is",(t2_log_3-t1_log_3)[3],"s.","\n")
+
+
+
+#cat("The fitted logistic regression model:","\n")
+#model_logreg_nofnlwgt
+
+#confusion matrix on test data
+conf_logreg_nofnlwgt=confusionMatrix( predict(model_logreg_nofnlwgt, newdata = X_test), 
+                         reference=X_test$income,
+                         positive="Y")
+cat("The confusion matrix of logistic regression model:","\n")
+conf_logreg_nofnlwgt
+#accuracy 80%, sens 82%, spec 80%, NIR 75%
+
+#ROC & AUC
+roc.logreg_nofnlwgt= roc(X_test$income, as.vector(ifelse(predict(model_logreg_nofnlwgt, newdata = X_test,type="prob")[,"Y"] >0.5, 1,0)) )
+
+auc.logreg_nofnlwgt = auc(roc.logreg_nofnlwgt)
+```
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+
+plot.roc(roc.logreg_nofnlwgt, print.auc = T, auc.polygon = T,col = mainPalette[5] ,print.thres = "best" )
+#AUC 0.807
+```
+
+```{r}
+
+save(model_logreg_nofnlwgt , file = 'logmodel.rda')
+saveRDS(model_logreg_nofnlwgt, "logmodel.rds")
+```
+
+The models give similar accuracy level, so for simplicity, we use the logistic model with un-transformed age and with fnl_wgt removed for deploying the shiny App.
+
+
+
+**Training scenario 4: Up-sampling**  
+
+For imbalanced data, other than down-sample the majority group, we can also up-sample the minority group. So let's try to fit a logistic regression on an up-sampled training data set.  
+
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+#record income to 0,1 for idea_cutoff purpose
+X$income=ifelse(X$income=="N","0","1")
+X$income=as.factor(X$income)
+
+set.seed(123)
+#data split based on the outcome variable - this is actually stratified split!
+X_index=createDataPartition(X$income, p=0.8, list=FALSE)
+X_train=X[X_index,]
+X_test=X[-X_index,]
+
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(DMwR)
+set.seed(123)
+train <- SMOTE(income ~.,
+               data.frame(X_train), 
+               perc.over = 100, 
+               perc.under = 200)
+```
+
+
+Check whether the distribution of the income classes is balanced in the training set.  
+
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+round(prop.table(table(select(train, income), exclude = NULL)), 4) * 100
+```
+
+
+Train the model
+```{r, echo= FALSE,warning=FALSE,message=FALSE}
+model_glm <- glm(income ~ age_stand + workclass + education + marital_status_group + occupation + relationship + race + sex + cap_gain + cap_loss + weekly_hours + native_region, data=train, family=binomial(link='logit'))   
+summary(model_glm)
+```
+
+
+From the model summary, if we use an alpha level of 0.05, we would say that all the variables used are significant so we will keep all variables used in the current model.  
+
+
+```{r,message=FALSE,warning=FALSE}
+#running the anova function to analyze the analysis of variance: 
+anova(model_glm, test="Chisq")
+```
+
+
+All variables used are significant with probability (Pr) values < 0.05.
+Education, marital_status, occupation, cap_loss, cap_gain have the highest deviance values.  
+
+
+#Evaluating the Model
+
+Now we will test the logistic regression model on the test data.  
+
+
+```{r}
+predicted_results_glm <- predict(model_glm, X_test, type='response')
+head(predicted_results_glm)
+```
+
+
+The predicted results are the probabilities for income to be equal to 0 (<=50K) for each instance in our test dataset.  we need to determine an ideal cutoff value to interpret the results in terms of 0(<=50K) or 1(>50K).  
+
+
+```{r,message=FALSE,warning=FALSE,tidy=TRUE}
+library(InformationValue)
+```
+```{r,message=FALSE,warning=FALSE}
+set.seed(123)
+ideal_cutoff_glm <- 
+  optimalCutoff(
+  actuals = X_test$income,
+  predictedScores = predicted_results_glm,
+  optimiseFor = "Both")
+```
+
+check ideal cutoff
+```{r, echo = FALSE}
+ideal_cutoff_glm
+```
+
+
+So the ideal cutoff value for oour prediction is 0.4599963. Now we can use the cutoff value to recode predictions.
+
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+predicted_results_glm_bin <- ifelse(predicted_results_glm >= ideal_cutoff_glm, 1, 0)
+head(predicted_results_glm_bin)
+```
+
+
+# Evaluate the model against the test data by creating a confusion matrix and use it to derive the model's accuracy/
+```{r, echo=FALSE}
+predicted_results_glm.table <- table(X_test$income, predicted_results_glm_bin)
+#predicted_results_glm.table
+sum(diag(predicted_results_glm.table))/nrow(X_test)
+```
+The accuracy is 78%. 
+
+
+ROC curve plots the True Positive Rate with the False Positive Rate, at different threshold settings.  
+
+
+AUC is the area under the curve, and the better a model is the closer the AUC is to 1, rather than to 0.5. Values above 0.80 indicate that the model does a good job in discriminating between the two categories which comprise our target variable.  
+
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+library(ROCR)
+p_glm <- predict(model_glm, X_test, type="response")
+pr_glm <- prediction(p_glm, X_test$income)
+prf <- performance(pr_glm, measure = "tpr", x.measure = "fpr")
+plot(prf)
+auc <- performance(pr_glm, measure = "auc")
+auc <- auc@y.values[[1]]
+
+cat("AUC is",auc,".","\n")
+```
+
+```{r}
+#ROC & AUC
+roc.glm = roc(X_test$income,as.vector(ifelse(p_glm >ideal_cutoff_glm, 1,0))) 
+auc.glm = auc(roc.glm)
+
+```
+
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+
+plot.roc(roc.glm, print.auc = T, auc.polygon = T,col = mainPalette[4] ,print.thres = "best" )
+```
+
+
+We can also look at the importance of each predictor individually using a filter approach.  
+
+
+To examine the absolute value of the t-statistic for each predictor:  
+
+
+```{r,message=FALSE,warning=FALSE}
+
+varImp(model_glm) 
+```
+According to the results of the varImp function, age, education - Bachelors, education - Doctorate, education - Masters, education- Prof - school, occupation Exec-managerial, occupation Prof-specialty, occupation Tech-support, relationship Not-in-family, relationship Own-child, capital loss of zero, hours per week (45 - 50, 50 -60, and less than 40) are the most important predictors for income status. 
+
+## Deployment
+
+The underlying code for this markdown can be found on github [Assignment 1](https://github.com/ML1000-GroupB/Assignment-1) 
+The prediction model is deployed in ShinyApp.The application accepts inputs from user and classify income as above or below 50K.The url for   
+[Income Classifier](https://mlgroupb.shinyapps.io/incomeclassifier/)  
+
+
+# Conclusion and Discussion.
+
+For the census adult income data set, since the model was built on the data collected in 1994, some values could be outdated and it's likely that the model doesn't  predict well nowadays. If other potential predictors could be collected, such as the city people reside in, the number of people in the household, the age group of children in the household, the highest education their parents received, the model could be further improved.
+
+
+There are missing value and outliers in this imbalanced dataset, we removed missing values for the sake of limited time and used different ways to clean the data. We tried differnt supervised learning algorithms on different sets of features. 
+
+
+We then use accuracy and AUC to evaluate the models. For our training and testing sets, the different algorithms give relatively close results. More specifically, the random forest model gives a 80% overall accuracy, 81% balanced accuracy, and AUC 0.81; KNN with the default Euclidean distance metric gives an accuracy of 77%, balanced accuracy of 80% and AUC 0.79. The accuracy of logistic regression on transformed variables is 80% and the balanced accuracy is 81%, with AUC 0.81. When we removed the final weight variable and/or train models using the original age values, the accuracy of the models almost did not change at all, but the computational speed becomes much slower.
+
+We chose the logistic regression model trained on the original age values for deployment, because of it's relatively high accuracy and ease of interpretation.
+
+
+
+# Bibliography
+
+https://www.youtube.com/watch?v=mf1A_8K84rw&ab_channel=DavidDalpiaz  
+ 
+ 
+https://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm  
+ 
+ 
+https://rpubs.com/vassitar/us_census_preprocessing  
+ 
+
+Intefrate.AI Inc. (2019). Respnsible AI Consumer Enterprise.  
+
+
+RPubs by Rstudio, https://rpubs.com/Cher/403319  
+  
+  
+Hadley Wickham & Garret Grolemund , R for Data Science, O’Reilly in January 2017
+
